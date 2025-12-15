@@ -1,23 +1,25 @@
 # inst/CITATION
 
-citHeader("To cite the refloraR package in publications, use:")
+citHeader("To cite the floraR package in publications, use:")
 
 bibentry(
   bibtype = "Manual",
-  title = "refloraR: An R Package for Exploring Plant Specimen Collections from REFLORA Virtual Herbarium",
+  title = "floraR: Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform",
   author = c(
-    person(given = "Domingos", family = "Cardoso",
-           role = c("aut", "cre"),
-           email = "domingoscardoso@jbrj.gov.br",
-           comment = c(ORCID = "0000-0001-7072-2656")),
-    person(given = "Carlos", family = "Calderón",
-           role = "aut",
-           email = "caldecid@gmail.com",
-           comment = c(ORCID = "0000-0002-3897-4615"))
+    person(given = "Domingos",
+             family = "Cardoso",
+             role = c("aut", "cre", "cph"),
+             email = "domingoscardoso@jbrj.gov.br",
+             comment = c(ORCID = "0000-0001-7072-2656")),
+      person(given = "Kelmer",
+             family = "Martins-Cunha",
+             role = c("aut", "cph"),
+             email = "kelmermartinscunha@gmail.com ",
+             comment = c(ORCID = "0000-0002-0545-5966"))
   ),
   year = 2025,
   note = "R package version 1.0.0",
-  url = "https://github.com/DBOSlab/refloraR"
+  url = "https://github.com/DBOSlab/floraR"
 )
 
 citFooter("This work was supported by CNPq and FINEP, with institutional support the Rio de Janeiro Botanical Garden (JBRJ).")
