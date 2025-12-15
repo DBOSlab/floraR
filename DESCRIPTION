@@ -1,0 +1,47 @@
+Package: floraR
+Type: Package
+Title: Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform
+Version: 1.0.0
+Authors@R:
+    c(
+      person(given = "Domingos",
+             family = "Cardoso",
+             role = c("aut", "cre", "cph"),
+             email = "domingoscardoso@jbrj.gov.br",
+             comment = c(ORCID = "0000-0001-7072-2656")),
+      person(given = "Kelmer",
+             family = "Martins-Cunha",
+             role = c("aut", "cph"),
+             email = "kelmermartinscunha@gmail.com ",
+             comment = c(ORCID = "0000-0002-0545-5966"))
+    )
+Maintainer: Domingos Cardoso <domingoscardoso@jbrj.gov.br>
+Description: The 'floraR' package provides a comprehensive interface to the 
+    Flora e Funga do Brasil (FFB) Platform, maintained by the 
+    Rio de Janeiro Botanical Garden. It offers tools for downloading, parsing, 
+    and analyzing taxonomic and distributional data published in Darwin Core Archive (DwC-A) format. 
+    Beyond data retrieval, 'floraR' also assists taxonomic experts contributing to the FFB 
+    by simplifying the integration of new species names and records from global biodiversity 
+    repositories such as IPNI, REFLORA, and GBIF. 
+    The package is designed to streamline both data exploration and data curation workflows, 
+    integrating seamlessly with the 'tidyverse' for downstream analyses and reproducible 
+    research pipelines.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    stringr,
+    utils,
+    finch,
+    tidyr,
+    magrittr,
+    dplyr,
+    purrr
+Suggests:
+    testthat (>= 3.0.0)
+URL:
+    https://dboslab.github.io/floraR-website/,
+    https://github.com/dboslab/floraR
+BugReports: https://github.com/DBOSlab/floraR/issues
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3
