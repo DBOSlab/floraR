@@ -8,7 +8,7 @@
 [![Codecov test
 coverage](https://codecov.io/gh/DBOSlab/floraR/graph/badge.svg)](https://app.codecov.io/gh/DBOSlab/floraR)
 [![Test
-Coverage](https://github.com/DBOSlab/floraR/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/DBOSlab/refloraR/actions/workflows/test-coverage.yaml)
+Coverage](https://github.com/DBOSlab/floraR/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/DBOSlab/floraR/actions/workflows/test-coverage.yaml)
 [![CRAN
 Downloads](https://cranlogs.r-pkg.org/badges/grand-total/floraR)](https://cran.r-project.org/package=floraR)
 [![R-CMD-check](https://github.com/DBOSlab/floraR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DBOSlab/floraR/actions/workflows/R-CMD-check.yaml)
@@ -83,7 +83,7 @@ Download taxonomic and distributional records in Darwin Core Archive
 specific versions, or all available versions..  
 
 ``` r
-library(refloraR)
+library(floraR)
 
 # Download the latest dataset version (default)
 flora_download(dir = "flora_download")
@@ -108,7 +108,7 @@ for analysis. This function works offline once datasets are
 downloaded.  
 
 ``` r
-library(refloraR)
+library(floraR)
 
 # Parse the latest downloaded version
 dwca_data <- flora_parse(path = "flora_download", 
