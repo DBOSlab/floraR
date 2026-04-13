@@ -26,6 +26,9 @@
 #' @param delay Numeric. Delay in seconds passed to \code{webshot::webshot()} to
 #'   allow the page to load before the PDF is captured. Default is \code{10}.
 #'
+#' @param verbose Logical. If \code{TRUE} (default), prints informative progress messages
+#' during parsing. If \code{FALSE}, runs quietly.
+#'
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{\code{descriptions_controlled}}{A named list of controlled
@@ -70,7 +73,9 @@
 #'
 #' @export
 
-flora_get_descriptions <- function(taxa=NULL, delay=10) {
+flora_get_descriptions <- function(taxa=NULL,
+                                   delay=10,
+                                   verbose = TRUE) {
   ## If there is any error, change the timeout in the javascript
 
   scientificName <- paste(taxa$genus, taxa$specificEpithet)
@@ -176,7 +181,9 @@ flora_get_descriptions <- function(taxa=NULL, delay=10) {
       c(failures_free, scientificName[i]) -> failures_free
     }
 
+    if (verbose) {
     message(paste0("Extracted ", i, "/", length(scientificName),": ", scientificName[i]))
+    }
     # end for loop
   }
 

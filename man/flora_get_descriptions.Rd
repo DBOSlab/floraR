@@ -4,7 +4,7 @@
 \alias{flora_get_descriptions}
 \title{Extract species descriptions from Flora e Funga do Brasil pages}
 \usage{
-flora_get_descriptions(taxa = NULL, delay = 10)
+flora_get_descriptions(taxa = NULL, delay = 10, verbose = TRUE)
 }
 \arguments{
 \item{taxa}{A data frame containing the taxa to process. It must include at
@@ -14,6 +14,9 @@ parse.}
 
 \item{delay}{Numeric. Delay in seconds passed to \code{webshot::webshot()} to
 allow the page to load before the PDF is captured. Default is \code{10}.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints informative progress messages
+during parsing. If \code{FALSE}, runs quietly.}
 }
 \value{
 A named list with two elements:
