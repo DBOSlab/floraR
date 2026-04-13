@@ -39,7 +39,6 @@ Imports:
     purrr,
     webshot,
     pdftools
-
 Suggests:
     testthat (>= 3.0.0)
 URL:
