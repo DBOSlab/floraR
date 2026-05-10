@@ -91,7 +91,6 @@
 #'
 #' @seealso
 #' \code{\link{flora_search}} for single-list searching.
-#' \code{\link{flora_fuzzy_search}} for retrieving all fuzzy matches.
 #' \code{\link{flora_download}} to manually download the DwC-A dataset.
 #' \code{\link{flora_parse}} to manually parse the downloaded dataset.
 #'

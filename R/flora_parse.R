@@ -24,7 +24,6 @@
 #' \enumerate{
 #'   \item \code{\link{flora_download}} — to download and store versioned DwC-A files.
 #'   \item \code{flora_parse()} — to parse and structure those files into a ready-to-use list.
-#'   \item \code{\link{flora_records}} — to summarize or query the parsed data.
 #' }
 #'
 #' @usage
@@ -67,7 +66,6 @@
 #' @seealso
 #' \code{\link{flora_version}} to inspect available dataset versions.
 #' \code{\link{flora_download}} to download the corresponding DwC-A archives.
-#' \code{\link{flora_records}} to extract and summarize parsed records.
 #'
 #' @note
 #' This function can operate **without an active internet connection**, as long as
@@ -95,7 +93,7 @@
 #' }
 #'
 #' @importFrom finch dwca_read
-#' @importFrom dplyr mutate select relocate filter rename
+#' @importFrom dplyr mutate select relocate filter rename tibble
 #' @importFrom tidyr unnest
 #' @importFrom stringr str_match
 #' @importFrom purrr pmap_chr

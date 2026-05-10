@@ -88,11 +88,7 @@ only the epithet is fuzzily matched, which is considerably faster for large
 lists.
 
 When multiple entries are matched, the one classified as
-\code{"NOME_ACEITO"} (accepted) is preferred. Use
-\code{\link{flora_fuzzy_search}} to retrieve all matches for ambiguous names.
-
-Input names that matched multiple entries can be retrieved via
-\code{attr(result, "matched_mult")}.
+\code{"NOME_ACEITO"} (accepted) is preferred.
 }
 \examples{
 \dontrun{
@@ -120,7 +116,6 @@ power of a collaborative scientific network. \emph{Taxon}, 71(1), 178–198.
 \doi{10.1002/tax.12640}
 }
 \seealso{
-\code{\link{flora_fuzzy_search}} to retrieve all fuzzy matches for a name.
 \code{\link{flora_match}} to compare two separate name lists.
 \code{\link{flora_download}} to manually download the DwC-A dataset.
 \code{\link{flora_parse}} to manually parse the downloaded dataset.

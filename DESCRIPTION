@@ -33,7 +33,9 @@ Imports:
     dplyr,
     purrr,
     webshot,
-    pdftools
+    pdftools,
+    tibble,
+    rlang
 Suggests:
     testthat (>= 3.0.0)
 URL:

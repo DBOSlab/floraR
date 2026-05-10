@@ -17,11 +17,7 @@
 #' lists.
 #'
 #' When multiple entries are matched, the one classified as
-#' \code{"NOME_ACEITO"} (accepted) is preferred. Use
-#' \code{\link{flora_fuzzy_search}} to retrieve all matches for ambiguous names.
-#'
-#' Input names that matched multiple entries can be retrieved via
-#' \code{attr(result, "matched_mult")}.
+#' \code{"NOME_ACEITO"} (accepted) is preferred.
 #'
 #' @usage
 #' flora_search(
@@ -91,7 +87,6 @@
 #' Rows for unmatched names contain \code{NA} in all FFB columns.
 #'
 #' @seealso
-#' \code{\link{flora_fuzzy_search}} to retrieve all fuzzy matches for a name.
 #' \code{\link{flora_match}} to compare two separate name lists.
 #' \code{\link{flora_download}} to manually download the DwC-A dataset.
 #' \code{\link{flora_parse}} to manually parse the downloaded dataset.

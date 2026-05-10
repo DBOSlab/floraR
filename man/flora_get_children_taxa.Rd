@@ -6,7 +6,7 @@
 \usage{
 flora_get_children_taxa(
   taxon_name = NULL,
-  rank = c("class", "order", "family", "genus", "species"),
+  rank = c("class", "order", "family", "tribe", "genus", "species"),
   child_rank = NULL,
   include_synonyms = FALSE,
   version = "latest",
@@ -83,8 +83,4 @@ genera <- flora_get_children_taxa(
 )
 }
 
-}
-\seealso{
-\code{\link{flora_get_parent_taxa}} for getting parent taxa,
-  \code{\link{flora_get_taxa}} for filtering by family and genus
 }

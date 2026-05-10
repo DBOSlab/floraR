@@ -42,9 +42,6 @@
 #'   \item If \code{child_rank = "subspecies"}: Returns only subspecies
 #' }
 #'
-#' @seealso \code{\link{flora_get_parent_taxa}} for getting parent taxa,
-#'   \code{\link{flora_get_taxa}} for filtering by family and genus
-#'
 #' @examples
 #' \dontrun{
 #' # Get all species in a genus (direct children)

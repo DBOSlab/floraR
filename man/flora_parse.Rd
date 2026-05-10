@@ -65,7 +65,6 @@ It is designed as the second step in the workflow:
 \enumerate{
   \item \code{\link{flora_download}} — to download and store versioned DwC-A files.
   \item \code{flora_parse()} — to parse and structure those files into a ready-to-use list.
-  \item \code{\link{flora_records}} — to summarize or query the parsed data.
 }
 }
 \note{
@@ -94,7 +93,6 @@ records <- flora_records(dwca)
 \seealso{
 \code{\link{flora_version}} to inspect available dataset versions.
 \code{\link{flora_download}} to download the corresponding DwC-A archives.
-\code{\link{flora_records}} to extract and summarize parsed records.
 }
 \author{
 Domingos Cardoso & Kelmer Martins-Cunha

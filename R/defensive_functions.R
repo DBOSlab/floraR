@@ -126,6 +126,51 @@
 }
 
 
+.check_taxon_match <- function(occur_df, taxon, verbose) {
+
+  all_names <- unique(c(occur_df$family, occur_df$genus, occur_df$taxonName))
+  matched_taxa <- taxon[taxon %in% all_names]
+  unmatched_taxa <- setdiff(taxon, matched_taxa)
+
+  if (verbose) {
+    if (length(unmatched_taxa) > 0) {
+      message("The following taxa were not found in any column: ", paste(unmatched_taxa, collapse = ", "))
+    }
+  }
+  matches <- occur_df$family %in% matched_taxa |
+    occur_df$genus %in% matched_taxa |
+    occur_df$taxonName %in% matched_taxa
+  matches <- any(matches)
+
+  if (!matches) {
+    stop(paste0(
+      "Your input 'taxon' list must contain at least one name existing within the REFLORA collections.\n",
+      "Check whether the input taxon list has any typo: ",
+      paste(unmatched_taxa, collapse = ", ")
+    ))
+  }
+}
+
+
+.check_state_match <- function(occur_df, state, verbose) {
+
+  matched_state <- state[state %in% unique(occur_df$stateProvince)]
+  unmatched_state <- setdiff(state, matched_state)
+
+  if (verbose && length(unmatched_state) > 0) {
+    message("The following states were not found: ", paste(unmatched_state, collapse = ", "))
+  }
+
+  if (length(matched_state) == 0) {
+    stop(paste0(
+      "Your input 'state' list must contain at least one name existing within the REFLORA collections.\n",
+      "Check whether the input state list has any typo: ",
+      paste(unmatched_state, collapse = ", ")
+    ))
+  }
+}
+
+
 #_______________________________________________________________________________
 # Validate that a character name list has valid encodings and is non-empty
 .flora_names_check <- function(splist, arg_name = "splist") {

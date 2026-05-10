@@ -54,7 +54,7 @@
 #' Text is extracted from the first PDF page only. Temporary output is always
 #' written to a file named \code{temp.pdf} in the working directory.
 #'
-#' @seealso \code{\link{flora_get_taxa}}, \code{\link{flora_build_matrix}}
+#' @seealso \code{\link{flora_get_children_taxa}}, \code{\link{flora_build_matrix}}
 #'
 #' @examples
 #' \dontrun{
@@ -70,6 +70,7 @@
 #'
 #' @importFrom webshot webshot
 #' @importFrom pdftools pdf_text
+#' @importFrom stats na.omit
 #'
 #' @export
 
@@ -115,15 +116,15 @@ flora_get_descriptions <- function(taxa=NULL,
         }
         if (length(i1) == 0) {
           grep(final.m3, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         if (length(i1) == 0) {
           grep(final.m4, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         if (length(i1) == 0) {
           grep(final.m5, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         d0[i0:i1] -> d0
         gsub("PT\r", "", d0, fixed=T) -> d0
@@ -154,15 +155,15 @@ flora_get_descriptions <- function(taxa=NULL,
         }
         if (length(i1) == 0) {
           grep(final.m3, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         if (length(i1) == 0) {
           grep(final.m4, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         if (length(i1) == 0) {
           grep(final.m5, d0)[1]-1 -> i1
-          na.omit(i1) -> i1
+          stats::na.omit(i1) -> i1
         }
         d0[i0:i1] -> d0
         gsub("PT\r", "", d0, fixed=T) -> d0

@@ -78,5 +78,5 @@ descriptions <- flora_get_descriptions(taxa, delay = 10)
 
 }
 \seealso{
-\code{\link{flora_get_taxa}}, \code{\link{flora_build_matrix}}
+\code{\link{flora_get_children_taxa}}, \code{\link{flora_build_matrix}}
 }
