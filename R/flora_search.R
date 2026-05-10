@@ -68,11 +68,8 @@
 #' \describe{
 #'   \item{Search}{The original input name supplied by the user.}
 #'   \item{FFB.taxon.ID}{Taxon ID in the FFB database (\code{id} column).}
-#'   \item{Input.Genus}{Genus of the matched taxon.}
-#'   \item{Input.Epithet}{Specific epithet of the matched taxon.}
 #'   \item{taxonRank}{Taxonomic rank (e.g., \code{"ESPECIE"},
 #'     \code{"VARIEDADE"}, \code{"SUBESPECIE"}).}
-#'   \item{Input.InfraspecificEpithet}{Infraspecific epithet, if applicable.}
 #'   \item{scientificNameAuthorship}{Author citation of the matched taxon.}
 #'   \item{taxonomicStatus}{FFB taxonomic status: \code{"NOME_ACEITO"}
 #'     (accepted), \code{"SINONIMO"} (synonym), or

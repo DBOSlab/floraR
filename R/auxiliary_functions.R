@@ -408,18 +408,18 @@
       taxon_df$specificEpithet[genus_rows]
     ))
     ep_thresh <- .flora_get_threshold(max_distance, nchar(ep_search))
-    dists     <- utils::adist(ep_search, cand_ep)[1L, ]
-    within    <- which(dists <= ep_thresh)
+    dists <- utils::adist(ep_search, cand_ep)[1L, ]
+    within <- which(dists <= ep_thresh)
     if (length(within) == 0L) return(NULL)
     rows <- genus_rows[within]
-    d    <- dists[within]
+    d <- dists[within]
   }
 
   if (!return_all || keep_closest) {
     min_d <- min(d)
-    keep  <- which(d == min_d)
-    rows  <- rows[keep]
-    d     <- d[keep]
+    keep <- which(d == min_d)
+    rows <- rows[keep]
+    d <- d[keep]
   }
 
   list(rows = rows, exact = FALSE, distances = d)
@@ -442,7 +442,7 @@
     if (!is.null(acc_pos) && length(acc_pos) > 0) {
       # Verificar se acc_pos[1] existe no taxon_df
       if (acc_pos[1] <= nrow(taxon_df)) {
-        return(list(id   = taxon_df$id[acc_pos[1]],
+        return(list(id = taxon_df$id[acc_pos[1]],
                     name = taxon_df$taxonName[acc_pos[1]]))
       }
     }
@@ -452,7 +452,7 @@
     return(list(id = NA_character_, name = NA_character_))
 
   } else if (!is.na(status) && status == "NOME_ACEITO") {
-    return(list(id   = taxon_df$id[row_idx],
+    return(list(id = taxon_df$id[row_idx],
                 name = taxon_df$taxonName[row_idx]))
   }
 
@@ -462,48 +462,48 @@
 
 #_______________________________________________________________________________
 # Build an NA-filled result row for an unmatched input name ####
-.flora_na_row <- function(spname) {
-  data.frame(
+.flora_na_row <- function(spname, include_correct = FALSE) {
+  df <- data.frame(
     Search = spname,
-    Correct.Spelling = NA_character_,
     FFB.taxon.ID = NA_character_,
-    Input.Genus = NA_character_,
-    Input.Epithet = NA_character_,
     taxonRank = NA_character_,
-    Input.InfraspecificEpithet = NA_character_,
     scientificNameAuthorship = NA_character_,
     taxonomicStatus = NA_character_,
     Accepted.taxon.ID = NA_character_,
     Accepted.taxon.Name = NA_character_,
     family = NA_character_,
     order = NA_character_,
-    stringsAsFactors = FALSE
+    stringsAsFactors = FALSE,
+    row.names = NULL
   )
-}
 
+  if (include_correct) {
+    df$Correct.Spelling <- NA
+    df <- df[, c("Search", "Correct.Spelling",
+                 names(df)[!names(df) %in% c("Search", "Correct.Spelling")])]
+  }
+
+  df
+}
 
 #_______________________________________________________________________________
 # Build result row(s) from one or more matched row indices in taxon_df. ####
-# Set include_distance = TRUE to append a Name.Distance column.
 .flora_build_rows <- function(spname, rows, dists, taxon_df, id_lookup,
-                              include_distance = FALSE) {
+                              include_distance = FALSE,
+                              include_correct = FALSE) {
 
-  # Envolver a chamada em tryCatch para capturar erros de subscript
   acc_list <- tryCatch({
     lapply(rows, .flora_resolve_accepted,
            taxon_df = taxon_df, id_lookup = id_lookup)
   }, error = function(e) {
     warning(paste("Error resolving accepted name for", spname, ":", e$message),
             call. = FALSE)
-    # Retornar lista com NAs
     lapply(rows, function(x) list(id = NA_character_, name = NA_character_))
   })
 
   df <- data.frame(
     Search = spname,
     FFB.taxon.ID = taxon_df$id[rows],
-    Input.Genus = taxon_df$genus[rows],
-    Input.Epithet = taxon_df$specificEpithet[rows],
     taxonRank = taxon_df$taxonRank[rows],
     Input.InfraspecificEpithet = .flora_get_col(taxon_df, "infraspecificEpithet")[rows],
     scientificNameAuthorship = .flora_get_col(taxon_df, "scientificNameAuthorship")[rows],
@@ -518,13 +518,20 @@
     stringsAsFactors = FALSE,
     row.names = NULL
   )
+
   if (include_distance) df$Name.Distance <- dists
+  if (include_correct) {
+    df$Correct.Spelling <- NA
+    df <- df[, c("Search", "Correct.Spelling",
+                 names(df)[!names(df) %in% c("Search", "Correct.Spelling")])]
+  }
+
   df
 }
 
 
 #_______________________________________________________________________________
-# Flag duplicated Accepted.taxon.Name entries in a result data.frame.
+# Flag duplicated Accepted.taxon.Name entries in a result data.frame. ####
 # Returns an integer vector: position of the first other occurrence, or NA.
 .flora_find_dups <- function(result) {
   nms <- result$Accepted.taxon.Name
@@ -574,7 +581,6 @@
 
 #_______________________________________________________________________________
 # Core search loop shared by flora_search() and flora_match(). ####
-# Accepts pre-built taxon structures so flora_match() only parses once.
 .flora_search_impl <- function(splist, taxon_df, genus_index, id_lookup,
                                max_distance, genus_fuzzy,
                                show_correct, progress_bar) {
@@ -596,7 +602,7 @@
       warning(paste0("'", splist[i],
                      "' does not include an epithet and will be skipped."),
               call. = FALSE)
-      results[[i]] <- .flora_na_row(splist[i])
+      results[[i]] <- .flora_na_row(splist[i], include_correct = show_correct)
       if (progress_bar) utils::setTxtProgressBar(pb, i)
       next
     }
@@ -606,7 +612,7 @@
 
     if (is.null(match_res)) {
       warning(paste0("No match found for '", splist[i], "'."), call. = FALSE)
-      results[[i]] <- .flora_na_row(splist[i])
+      results[[i]] <- .flora_na_row(splist[i], include_correct = show_correct)
       if (progress_bar) utils::setTxtProgressBar(pb, i)
       next
     }
@@ -629,12 +635,14 @@
                                       dists = d_chosen,
                                       taxon_df,
                                       id_lookup,
-                                      include_distance = FALSE)
+                                      include_distance = FALSE,
+                                      include_correct = show_correct)
     if (progress_bar) utils::setTxtProgressBar(pb, i)
   }
 
   if (progress_bar) close(pb)
 
+  # Verificar se todas as linhas têm as mesmas colunas
   result_final <- do.call(rbind, results)
   rownames(result_final) <- NULL
 
@@ -643,7 +651,11 @@
     return(NULL)
   }
 
-  if (show_correct) result_final$Correct.Spelling <- is_exact
+  if (show_correct) {
+    result_final$Correct.Spelling <- is_exact
+    result_final <- result_final[, c("Search", "Correct.Spelling",
+                                     names(result_final)[!names(result_final) %in% c("Search", "Correct.Spelling")])]
+  }
 
   if (any(homonyms)) {
     warning(paste0(
