@@ -40,6 +40,9 @@ exactly and only the epithet is matched fuzzily.}
 \item{progress_bar}{Logical. If \code{TRUE}, a progress bar is printed.
 Default is \code{FALSE}.}
 
+\item{verbose}{Logical. If \code{TRUE} (default), prints informative progress messages
+during parsing. If \code{FALSE}, runs quietly.}
+
 \item{dir}{Character. Local directory where the DwC-A dataset is (or will
 be) stored. Defaults to \code{"flora_download"}. Passed to
 \code{\link{flora_download}} and \code{\link{flora_parse}}.}
@@ -49,11 +52,8 @@ A data frame with one row per input name and the following columns:
 \describe{
   \item{Search}{The original input name supplied by the user.}
   \item{FFB.taxon.ID}{Taxon ID in the FFB database (\code{id} column).}
-  \item{Input.Genus}{Genus of the matched taxon.}
-  \item{Input.Epithet}{Specific epithet of the matched taxon.}
   \item{taxonRank}{Taxonomic rank (e.g., \code{"ESPECIE"},
     \code{"VARIEDADE"}, \code{"SUBESPECIE"}).}
-  \item{Input.InfraspecificEpithet}{Infraspecific epithet, if applicable.}
   \item{scientificNameAuthorship}{Author citation of the matched taxon.}
   \item{taxonomicStatus}{FFB taxonomic status: \code{"NOME_ACEITO"}
     (accepted), \code{"SINONIMO"} (synonym), or

@@ -2,8 +2,8 @@
 
 export(flora_build_matrix)
 export(flora_download)
+export(flora_get_children_taxa)
 export(flora_get_descriptions)
-export(flora_get_taxa)
 export(flora_match)
 export(flora_parse)
 export(flora_search)

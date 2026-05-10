@@ -63,6 +63,9 @@
 #' @param progress_bar Logical. If \code{TRUE}, a progress bar is printed.
 #'   Default is \code{FALSE}.
 #'
+#' @param verbose Logical. If \code{TRUE} (default), prints informative progress messages
+#' during parsing. If \code{FALSE}, runs quietly.
+#'
 #' @return
 #' A data frame with one row per input name and the following columns:
 #' \describe{

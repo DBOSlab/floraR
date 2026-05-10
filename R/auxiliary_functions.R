@@ -665,5 +665,8 @@
     attr(result_final, "matched_mult") <- splist[homonyms]
   }
 
+  # Remove the downloaded FFB folder flora_download
+  unlink("flora_download", recursive = TRUE)
+
   result_final
 }
