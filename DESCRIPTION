@@ -8,12 +8,7 @@ Authors@R:
              family = "Cardoso",
              role = c("aut", "cre", "cph"),
              email = "domingoscardoso@jbrj.gov.br",
-             comment = c(ORCID = "0000-0001-7072-2656")),
-      person(given = "Kelmer",
-             family = "Martins-Cunha",
-             role = c("aut", "cph"),
-             email = "kelmermartinscunha@gmail.com ",
-             comment = c(ORCID = "0000-0002-0545-5966"))
+             comment = c(ORCID = "0000-0001-7072-2656"))
     )
 Maintainer: Domingos Cardoso <domingoscardoso@jbrj.gov.br>
 Description: The 'floraR' package provides a comprehensive interface to the 

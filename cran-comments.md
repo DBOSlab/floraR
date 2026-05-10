@@ -5,7 +5,7 @@
 * **Package name:** floraR  
 * **Version:** 1.0.0  
 * **Title:** Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform  
-* **Authors:** Domingos Cardoso, Kelmer Martins-Cunha  
+* **Authors:** Domingos Cardoso  
 * **Maintainer:** Domingos Cardoso <domingoscardoso@jbrj.gov.br>  
 * **License:** MIT  
 * **URL:** https://github.com/DBOSlab/floraR  

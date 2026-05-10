@@ -125,3 +125,20 @@
   return(corrected_states)
 }
 
+
+#_______________________________________________________________________________
+# Validate that a character name list has valid encodings and is non-empty
+.flora_names_check <- function(splist, arg_name = "splist") {
+  if (!is.character(splist)) {
+    stop(paste0("'", arg_name, "' must be a character vector, not '",
+                class(splist), "'."), call. = FALSE)
+  }
+  if (length(splist) == 0L) {
+    stop(paste0("'", arg_name, "' must not be empty."), call. = FALSE)
+  }
+  invalid <- !validEnc(splist)
+  if (any(invalid, na.rm = TRUE)) {
+    stop(paste0("'", arg_name, "' contains invalid characters: ",
+                paste(splist[invalid], collapse = ", ")), call. = FALSE)
+  }
+}

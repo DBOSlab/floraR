@@ -40,10 +40,13 @@
 #'   check.correct = FALSE
 #' )
 #' }
-#' 
+#'
 #' @export
 
-flora_get_taxa <- function(family=NULL, genus=NULL, data=NULL, check.correct=T) {
+flora_get_taxa <- function(family = NULL,
+                           genus = NULL,
+                           data = NULL,
+                           check.correct = TRUE) {
   data -> taxons
   taxons[which(taxons$family == family),] -> taxons
   taxons[which(taxons$taxonomicStatus == "NOME_ACEITO"),] -> taxons
