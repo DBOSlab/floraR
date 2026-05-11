@@ -22,11 +22,13 @@
 #' @usage
 #' flora_search(
 #'   splist,
-#'   dwca,
+#'   version = "latest",
 #'   max_distance = 0.2,
 #'   show_correct = FALSE,
 #'   genus_fuzzy  = FALSE,
-#'   progress_bar = FALSE
+#'   progress_bar = FALSE,
+#'   rm_flora_database = FALSE,
+#'   verbose = TRUE
 #' )
 #'
 #' @param splist A character vector of plant names to search. Each element
@@ -37,10 +39,6 @@
 #' @param version Character. FFB dataset version to use. Defaults to
 #'   \code{"latest"}. Passed to \code{\link{flora_download}} and
 #'   \code{\link{flora_parse}}.
-#'
-#' @param dir Character. Local directory where the DwC-A dataset is (or will
-#'   be) stored. Defaults to \code{"flora_download"}. Passed to
-#'   \code{\link{flora_download}} and \code{\link{flora_parse}}.
 #'
 #' @param max_distance Numeric. Maximum string distance allowed for a fuzzy
 #'   match, expressed as a generalized Levenshtein distance (insertions,
@@ -59,8 +57,17 @@
 #' @param progress_bar Logical. If \code{TRUE}, a progress bar is printed.
 #'   Default is \code{FALSE}.
 #'
-#' @param verbose Logical. If \code{TRUE} (default), prints informative progress messages
-#' during parsing. If \code{FALSE}, runs quietly.
+#' @param rm_flora_database Logical. If \code{TRUE}, the downloaded FFB database
+#'   folder (\code{"flora_download"}) is deleted after the search is complete.
+#'   If \code{FALSE} (default), the database is kept on disk. Keeping the
+#'   database is **recommended** because subsequent searches will reuse the
+#'   existing download, checking if the stored version matches the requested
+#'   \code{version}. If the stored version is outdated or different from the
+#'   requested version, the function automatically re-downloads the correct
+#'   version. This caching behavior significantly speeds up repeated searches.
+#'
+#' @param verbose Logical. If \code{TRUE} (default), prints informative progress
+#'   messages during parsing and download. If \code{FALSE}, runs quietly.
 #'
 #' @return
 #' A data frame with one row per input name and the following columns:
@@ -86,6 +93,18 @@
 #' Returns \code{NULL} with a warning if no match is found for any input.
 #' Rows for unmatched names contain \code{NA} in all FFB columns.
 #'
+#' @section Database caching behavior:
+#' The Brazilian flora dataset is downloaded only once and cached locally in the
+#' \code{"flora_download"} folder. On subsequent calls:
+#' \itemize{
+#'   \item If \code{rm_flora_database = FALSE} (default), the function checks if
+#'     the cached version matches the requested \code{version}. If yes, it
+#'     reuses the existing download; if not, it downloads the correct version.
+#'   \item If \code{rm_flora_database = TRUE}, the database is deleted after
+#'     each search, forcing a fresh download on every call (not recommended
+#'     for repeated searches).
+#' }
+#'
 #' @seealso
 #' \code{\link{flora_match}} to compare two separate name lists.
 #' \code{\link{flora_download}} to manually download the DwC-A dataset.
@@ -101,7 +120,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Search a single accepted name (downloads + parses automatically)
+#' # Search a single accepted name (downloads + parses automatically, caches result)
 #' flora_search("Mimosa sensitiva")
 #'
 #' # Search with a misspelled epithet; flag fuzzy matches
@@ -115,7 +134,10 @@
 #' results <- flora_search(splist, progress_bar = TRUE)
 #'
 #' # Use a specific FFB version stored in a custom folder
-#' flora_search(splist, version = "393.418", dir = "my_flora_data")
+#' flora_search(splist, version = "393.418")
+#'
+#' # Force fresh download by removing cached database after search
+#' flora_search(splist, rm_flora_database = TRUE)  # Not recommended for repeated use
 #' }
 #'
 #' @importFrom utils adist txtProgressBar setTxtProgressBar
@@ -128,12 +150,18 @@ flora_search <- function(splist,
                          show_correct = TRUE,
                          genus_fuzzy = TRUE,
                          progress_bar = TRUE,
+                         rm_flora_database = FALSE,
                          verbose = TRUE) {
 
   if (is.factor(splist)) splist <- as.character(splist)
   .flora_names_check(splist, "splist")
 
-  ffb <- .flora_prepare_taxon(version = version, verbose = verbose)
+  # Note: .flora_prepare_taxon will handle caching logic internally
+  # flora_download already checks if the version exists and is up-to-date
+
+  ffb <- .flora_prepare_taxon(version = version,
+                              verbose = verbose,
+                              rm_flora_database = rm_flora_database)
 
   ffb_search <- .flora_search_impl(splist,
                                    ffb$taxon_df, ffb$genus_index, ffb$id_lookup,

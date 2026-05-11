@@ -408,7 +408,7 @@
 #_______________________________________________________________________________
 # Download (if needed) and parse the FFB dataset, returning a list with the ####
 # three pre-built structures shared by the search functions.
-.flora_prepare_taxon <- function(version, verbose) {
+.flora_prepare_taxon <- function(version, verbose, rm_flora_database) {
   floraR::flora_download(version = version, dir = "flora_download", verbose = verbose)
   dwca <- floraR::flora_parse(path = "flora_download", version = version, verbose = verbose)
   taxon_df <- .flora_get_taxon(dwca)
@@ -428,6 +428,11 @@
   }
 
   id_lookup <- tapply(all_rows, all_ids, unique, simplify = FALSE)
+
+  # Remove the downloaded FFB folder flora_download
+  if (rm_flora_database) {
+    unlink("flora_download", recursive = TRUE)
+  }
 
   list(
     taxon_df = taxon_df,
@@ -522,9 +527,6 @@
       call. = FALSE)
     attr(result_final, "matched_mult") <- splist[homonyms]
   }
-
-  # Remove the downloaded FFB folder flora_download
-  unlink("flora_download", recursive = TRUE)
 
   result_final
 }

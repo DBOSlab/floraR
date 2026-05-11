@@ -7,11 +7,15 @@
 flora_match(
   splist1,
   splist2,
-  dwca,
-  max_distance  = 0.2,
-  genus_fuzzy   = FALSE,
-  include_all   = TRUE,
-  identify_dups = TRUE
+  version = "latest",
+  max_distance = 0.2,
+  genus_fuzzy = FALSE,
+  include_all = TRUE,
+  identify_dups = TRUE,
+  show_correct = TRUE,
+  progress_bar = TRUE,
+  rm_flora_database = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -28,15 +32,14 @@ Only valid characters are allowed (see
 \code{"latest"}. Passed to \code{\link{flora_download}} and
 \code{\link{flora_parse}}.}
 
-\item{dir}{Character. Local directory where the DwC-A dataset is (or will
-be) stored. Defaults to \code{"flora_download"}. Passed to
-\code{\link{flora_download}} and \code{\link{flora_parse}}.}
-
 \item{max_distance}{Numeric. Maximum string distance for fuzzy matching.
-Default is \code{0.2}.}
+Can be a positive integer (e.g., \code{2} allows up to 2 edits) or a
+fraction of the name length (e.g., \code{0.1} allows 1 edit per 10
+characters). Default is \code{0.2}.}
 
 \item{genus_fuzzy}{Logical. If \code{TRUE}, the fuzzy match also applies to
-the genus. Default is \code{FALSE}.}
+the genus (slower). If \code{FALSE} (default), the genus must match exactly
+and only the epithet is matched fuzzily.}
 
 \item{include_all}{Logical. If \code{TRUE} (default), names found only in
 \code{splist2} are appended to the result with \code{NA} in the
@@ -48,6 +51,26 @@ the genus. Default is \code{FALSE}.}
 position of the first other occurrence of the same \code{Accepted.taxon.Name}.
 This occurs when two input names are synonyms of the same accepted taxon.
 \code{NA} is returned when there is no duplicate.}
+
+\item{show_correct}{Logical. If \code{TRUE}, a \code{Correct} column is
+appended indicating whether the input was exactly matched (\code{TRUE}) or
+fuzzily matched (\code{FALSE}) in the \code{flora_search} results for
+\code{splist1}. Default is \code{TRUE}.}
+
+\item{progress_bar}{Logical. If \code{TRUE}, a progress bar is printed during
+name searches. Default is \code{TRUE}.}
+
+\item{rm_flora_database}{Logical. If \code{TRUE}, the downloaded FFB database
+folder (\code{"flora_download"}) is deleted after the search is complete.
+If \code{FALSE} (default), the database is kept on disk. Keeping the
+database is **recommended** because subsequent searches will reuse the
+existing download, checking if the stored version matches the requested
+\code{version}. If the stored version is outdated or different from the
+requested version, the function automatically re-downloads the correct
+version. This caching behavior significantly speeds up repeated searches.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints informative progress
+messages during parsing and download. If \code{FALSE}, runs quietly.}
 }
 \value{
 A data frame with one row per input name (from \code{splist1} first, then
@@ -58,11 +81,22 @@ the following columns:
     come only from \code{splist2}).}
   \item{Species.List.2}{The matched name from \code{splist2}, or \code{NA}
     if no match was found.}
-  \item{FFB.taxon.ID, Input.Genus, Input.Epithet, taxonRank,
-    Input.InfraspecificEpithet, scientificNameAuthorship, taxonomicStatus,
-    Accepted.taxon.ID, Accepted.taxon.Name, family, order}{FFB columns from
-    the \code{\link{flora_search}} result for \code{splist1} (or
-    \code{splist2} for unmatched rows).}
+  \item{FFB.taxon.ID}{Taxon ID in the FFB database.}
+  \item{Input.Genus}{Genus extracted from the input name.}
+  \item{Input.Epithet}{Specific epithet extracted from the input name.}
+  \item{taxonRank}{Taxonomic rank (e.g., \code{"ESPECIE"}, \code{"VARIEDADE"}).}
+  \item{Input.InfraspecificEpithet}{Infraspecific epithet if present.}
+  \item{scientificNameAuthorship}{Author citation of the matched taxon.}
+  \item{taxonomicStatus}{FFB taxonomic status: \code{"NOME_ACEITO"}
+    (accepted), \code{"SINONIMO"} (synonym), or \code{"NOME_DUVIDOSO"}.}
+  \item{Accepted.taxon.ID}{ID of the accepted name.}
+  \item{Accepted.taxon.Name}{Accepted taxon name resolved from the FFB
+    database.}
+  \item{family}{Plant family.}
+  \item{order}{Plant order (when available in the FFB data).}
+  \item{Correct}{(Only when \code{show_correct = TRUE}) Logical indicating
+    an exact match (\code{TRUE}) vs. a fuzzy match (\code{FALSE}) for
+    \code{splist1}.}
   \item{Match.Position.2to1}{Row index of the matched name in
     \code{splist2}.}
   \item{Duplicated.Output.Position}{(Only when \code{identify_dups = TRUE})
@@ -93,6 +127,20 @@ name in \code{splist2}; use it to re-order \code{splist2} to align with
 \code{splist1}:
 \code{splist2[result$Match.Position.2to1]}.
 }
+\section{Database caching behavior}{
+
+The FFB dataset is downloaded only once and cached locally in the
+\code{"flora_download"} folder. On subsequent calls:
+\itemize{
+  \item If \code{rm_flora_database = FALSE} (default), the function checks if
+    the cached version matches the requested \code{version}. If yes, it
+    reuses the existing download; if not, it downloads the correct version.
+  \item If \code{rm_flora_database = TRUE}, the database is deleted after
+    each search, forcing a fresh download on every call (not recommended
+    for repeated searches).
+}
+}
+
 \examples{
 \dontrun{
 # Two lists that may overlap or contain synonyms for the same accepted names
@@ -110,7 +158,10 @@ result2 <- flora_match(splist1, splist2, include_all = FALSE)
 splist2[result2$Match.Position.2to1]
 
 # Use a specific FFB version stored in a custom folder
-flora_match(splist1, splist2, version = "393.418", dir = "my_flora_data")
+flora_match(splist1, splist2, version = "393.418")
+
+# Force fresh download by removing cached database after match
+flora_match(splist1, splist2, rm_flora_database = TRUE)
 }
 
 }

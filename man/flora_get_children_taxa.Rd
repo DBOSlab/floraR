@@ -10,6 +10,7 @@ flora_get_children_taxa(
   child_rank = NULL,
   include_synonyms = FALSE,
   version = "latest",
+  rm_flora_database = FALSE,
   verbose = TRUE
 )
 }
@@ -35,6 +36,15 @@ Default is \code{FALSE}.}
 \code{"latest"}. Passed to \code{\link{flora_download}} and
 \code{\link{flora_parse}}.}
 
+\item{rm_flora_database}{Logical. If \code{TRUE}, the downloaded FFB database
+folder (\code{"flora_download"}) is deleted after the search is complete.
+If \code{FALSE} (default), the database is kept on disk. Keeping the
+database is **recommended** because subsequent searches will reuse the
+existing download, checking if the stored version matches the requested
+\code{version}. If the stored version is outdated or different from the
+requested version, the function automatically re-downloads the correct
+version. This caching behavior significantly speeds up repeated searches.}
+
 \item{verbose}{Logical. If \code{TRUE} (default), prints informative progress
 messages during parsing. If \code{FALSE}, runs quietly.}
 }
@@ -58,6 +68,20 @@ that have the parent's \code{taxonID} in their lineage.
   \item If \code{child_rank = "subspecies"}: Returns only subspecies
 }
 }
+\section{Database caching behavior}{
+
+The Brazilian flora dataset is downloaded only once and cached locally in the
+\code{"flora_download"} folder. On subsequent calls:
+\itemize{
+  \item If \code{rm_flora_database = FALSE} (default), the function checks if
+    the cached version matches the requested \code{version}. If yes, it
+    reuses the existing download; if not, it downloads the correct version.
+  \item If \code{rm_flora_database = TRUE}, the database is deleted after
+    each search, forcing a fresh download on every call (not recommended
+    for repeated searches).
+}
+}
+
 \examples{
 \dontrun{
 # Get all species in a genus (direct children)

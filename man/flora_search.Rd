@@ -6,11 +6,13 @@
 \usage{
 flora_search(
   splist,
-  dwca,
+  version = "latest",
   max_distance = 0.2,
   show_correct = FALSE,
   genus_fuzzy  = FALSE,
-  progress_bar = FALSE
+  progress_bar = FALSE,
+  rm_flora_database = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -40,12 +42,17 @@ exactly and only the epithet is matched fuzzily.}
 \item{progress_bar}{Logical. If \code{TRUE}, a progress bar is printed.
 Default is \code{FALSE}.}
 
-\item{verbose}{Logical. If \code{TRUE} (default), prints informative progress messages
-during parsing. If \code{FALSE}, runs quietly.}
+\item{rm_flora_database}{Logical. If \code{TRUE}, the downloaded FFB database
+folder (\code{"flora_download"}) is deleted after the search is complete.
+If \code{FALSE} (default), the database is kept on disk. Keeping the
+database is **recommended** because subsequent searches will reuse the
+existing download, checking if the stored version matches the requested
+\code{version}. If the stored version is outdated or different from the
+requested version, the function automatically re-downloads the correct
+version. This caching behavior significantly speeds up repeated searches.}
 
-\item{dir}{Character. Local directory where the DwC-A dataset is (or will
-be) stored. Defaults to \code{"flora_download"}. Passed to
-\code{\link{flora_download}} and \code{\link{flora_parse}}.}
+\item{verbose}{Logical. If \code{TRUE} (default), prints informative progress
+messages during parsing and download. If \code{FALSE}, runs quietly.}
 }
 \value{
 A data frame with one row per input name and the following columns:
@@ -90,9 +97,23 @@ lists.
 When multiple entries are matched, the one classified as
 \code{"NOME_ACEITO"} (accepted) is preferred.
 }
+\section{Database caching behavior}{
+
+The Brazilian flora dataset is downloaded only once and cached locally in the
+\code{"flora_download"} folder. On subsequent calls:
+\itemize{
+  \item If \code{rm_flora_database = FALSE} (default), the function checks if
+    the cached version matches the requested \code{version}. If yes, it
+    reuses the existing download; if not, it downloads the correct version.
+  \item If \code{rm_flora_database = TRUE}, the database is deleted after
+    each search, forcing a fresh download on every call (not recommended
+    for repeated searches).
+}
+}
+
 \examples{
 \dontrun{
-# Search a single accepted name (downloads + parses automatically)
+# Search a single accepted name (downloads + parses automatically, caches result)
 flora_search("Mimosa sensitiva")
 
 # Search with a misspelled epithet; flag fuzzy matches
@@ -106,7 +127,10 @@ splist <- c("Mimosa sensitiva", "Swartzia simplex", "Inga edulis")
 results <- flora_search(splist, progress_bar = TRUE)
 
 # Use a specific FFB version stored in a custom folder
-flora_search(splist, version = "393.418", dir = "my_flora_data")
+flora_search(splist, version = "393.418")
+
+# Force fresh download by removing cached database after search
+flora_search(splist, rm_flora_database = TRUE)  # Not recommended for repeated use
 }
 
 }
