@@ -121,7 +121,6 @@ flora_get_children_taxa <- function(taxon_name = NULL,
   # DEFINE TAXONOMIC HIERARCHY
   # ============================================================
 
-  # Mapeamento de ranks do usuário para FFB
   rank_map <- c(
     class = "CLASSE",
     order = "ORDEM",

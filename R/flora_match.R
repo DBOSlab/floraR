@@ -246,7 +246,7 @@ flora_match <- function(splist1,
         search2[unmatched_in_sp2, ffb_cols, drop = FALSE],
         data.frame(
           Match.Position.2to1 = unmatched_in_sp2,
-          stringsAsFactors    = FALSE
+          stringsAsFactors = FALSE
         )
       )
       result <- rbind(result, extra)
