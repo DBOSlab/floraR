@@ -325,6 +325,7 @@
     Search = spname,
     FFB.taxon.ID = NA_character_,
     taxonRank = NA_character_,
+    Input.InfraspecificEpithet = NA_character_,
     scientificNameAuthorship = NA_character_,
     taxonomicStatus = NA_character_,
     Accepted.taxon.ID = NA_character_,
@@ -481,7 +482,7 @@
     }
 
     is_exact[i] <- match_res$exact
-    rows  <- match_res$rows
+    rows <- match_res$rows
     dists <- match_res$distances
 
     if (length(rows) > 1L) {

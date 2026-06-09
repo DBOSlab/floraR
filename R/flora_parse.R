@@ -72,7 +72,7 @@
 #' the DwC-A datasets were downloaded beforehand using \code{\link{flora_download}}.
 #'
 #' @author
-#' Domingos Cardoso & Kelmer Martins-Cunha
+#' Domingos Cardoso
 #'
 #' @examples
 #' \dontrun{
@@ -143,8 +143,8 @@ flora_parse <- function(path = NULL,
     dwca_files[[i]][["data"]][["taxon.txt"]][["family"]][dwca_files[[i]][["data"]][["taxon.txt"]][["family"]] %in% "NA"] <- NA
     dwca_files[[i]][["data"]][["taxon.txt"]][["genus"]][dwca_files[[i]][["data"]][["taxon.txt"]][["genus"]] %in% "NA"] <- NA
     taxon_df <- dwca_files[[i]][["data"]][["taxon.txt"]]
-    taxon_df$references <- paste0("https://floradobrasil.jbrj.gov.br/consulta/ficha.html?idDadosListaBrasil=",
-                                  gsub(".*=FB", "", taxon_df$references))
+    # taxon_df$references <- paste0("https://floradobrasil.jbrj.gov.br/consulta/ficha.html?idDadosListaBrasil=",
+    #                               gsub(".*=FB", "", taxon_df$references))
     distribution_df <- dwca_files[[i]][["data"]][["distribution.txt"]]
     resourcerelationship_df <- dwca_files[[i]][["data"]][["resourcerelationship.txt"]]
     vernacularname_df <- dwca_files[[i]][["data"]][["vernacularname.txt"]]

@@ -47,7 +47,7 @@
 #' \code{\link{flora_version}} to retrieve metadata and available versions.
 #'
 #' @author
-#' Domingos Cardoso & Kelmer Martins-Cunha
+#' Domingos Cardoso
 #'
 #' @examples
 #' \dontrun{

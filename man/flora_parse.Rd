@@ -95,5 +95,5 @@ records <- flora_records(dwca)
 \code{\link{flora_download}} to download the corresponding DwC-A archives.
 }
 \author{
-Domingos Cardoso & Kelmer Martins-Cunha
+Domingos Cardoso
 }

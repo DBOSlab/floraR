@@ -22,7 +22,7 @@
 #' }
 #'
 #' @author
-#' Domingos Cardoso & Kelmer Martins-Cunha
+#' Domingos Cardoso
 #'
 #' @seealso
 #' \code{\link{flora_download}} for downloading the data of a specific version.

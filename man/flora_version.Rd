@@ -38,5 +38,5 @@ a cleaned and structured summary as a data frame.
 \code{\link{flora_download}} for downloading the data of a specific version.
 }
 \author{
-Domingos Cardoso & Kelmer Martins-Cunha
+Domingos Cardoso
 }

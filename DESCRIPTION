@@ -42,5 +42,5 @@ URL:
     https://dboslab.github.io/floraR-website/,
     https://github.com/dboslab/floraR
 BugReports: https://github.com/DBOSlab/floraR/issues
-RoxygenNote: 7.3.3
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
