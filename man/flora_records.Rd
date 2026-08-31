@@ -83,7 +83,7 @@ A \code{data.frame} of FFB taxon records matching the requested
 \description{
 Retrieves and filters plant taxon records from the locally parsed
 \href{https://floradobrasil.jbrj.gov.br/consulta/}{Flora e Funga do Brasil (FFB)}
-checklist, hosted by the \href{https://www.gov.br/jbrj/pt-br}{Rio de Janeiro
+taxonomic database, hosted by the \href{https://www.gov.br/jbrj/pt-br}{Rio de Janeiro
 Botanical Garden}. Unlike \code{\link{flora_search}}, which resolves a list of
 species names you already have against the FFB database, \code{flora_records()}
 browses and filters the FFB checklist itself by taxonomic, geographic, and
