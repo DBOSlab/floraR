@@ -35,8 +35,12 @@ You can install the development version of `floraR` from
 [GitHub](https://github.com/DBOSlab/floraR) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("DBOSlab/floraR")
+if (!requireNamespace("BiocManager", quietly = TRUE)) 
+install.packages("BiocManager") 
+
+# Install the development version of floraR from GitHub, 
+# together with its required dependencies 
+BiocManager::install("DBOSlab/floraR", dependencies = TRUE)
 ```
 
 ``` r

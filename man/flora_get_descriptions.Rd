@@ -66,12 +66,8 @@ written to a file named \code{temp.pdf} in the working directory.
 }
 \examples{
 \dontrun{
-taxa <- flora_get_taxa(
-  family = "Fabaceae",
-  genus = "Luetzelburgia",
-  data = flora,
-  check.correct = FALSE
-)
+taxa <- flora_records(taxon = "Luetzelburgia",
+                      taxonomicStatus = "NOME_ACEITO")
 
 descriptions <- flora_get_descriptions(taxa, delay = 10)
 }
