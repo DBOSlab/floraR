@@ -150,7 +150,7 @@ flora_get_children_taxa <- function(taxon_name = NULL,
 
     if (verbose) {
       message(sprintf("Retrieving ALL descendant ranks: %s",
-                      paste(child_ranks_to_get, collapse = " → ")))
+                      paste(child_ranks_to_get, collapse = " \u2192 ")))
     }
   } else {
     # Get only the specified child rank
@@ -317,7 +317,7 @@ flora_get_children_taxa <- function(taxon_name = NULL,
   }
 
   if (verbose) {
-    message(sprintf("\n✓ Returned %d child taxa for %s '%s'",
+    message(sprintf("\n\u2713 Returned %d child taxa for %s '%s'",
                     nrow(children), rank, taxon_name))
   }
 

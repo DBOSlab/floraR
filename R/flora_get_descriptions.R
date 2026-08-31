@@ -3,8 +3,8 @@
 #' Downloads printable PDF versions of Flora e Funga do Brasil (FFB) taxon pages
 #' for a set of species and extracts text from the description sections. The
 #' function attempts to recover two kinds of descriptions from each page:
-#' controlled descriptions ("Descrição com campos controlados") and free
-#' descriptions ("Descrição livre").
+#' controlled descriptions ("Descricao com campos controlados") and free
+#' descriptions ("Descricao livre").
 #'
 #' For each taxon, the function:
 #' \enumerate{
@@ -43,12 +43,12 @@
 #' The function assumes that the printable FFB page contains recognizable
 #' section headers in Portuguese and/or English, such as:
 #' \itemize{
-#'   \item \code{"Descrição com campos controlados|Description with controlled"}
-#'   \item \code{"Descrição livre|Free description"}
-#'   \item \code{"Comentários|Commentaries"}
+#'   \item \code{"Descricao com campos controlados|Description with controlled"}
+#'   \item \code{"Descricao livre|Free description"}
+#'   \item \code{"Comentarios|Commentaries"}
 #'   \item \code{"Vouchers"}
 #'   \item \code{"Origem|Origin"}
-#'   \item \code{"Bibliografia Referência|Reference"}
+#'   \item \code{"Bibliografia Referencia|Reference"}
 #' }
 #'
 #' Text is extracted from the first PDF page only. Temporary output is always
@@ -101,12 +101,12 @@ flora_get_descriptions <- function(taxa=NULL,
       unlist(strsplit(as.character(txt[[1]]), "\n", fixed=T)) -> d0
 
       # Description within controlled fields
-      ini.m = "Descrição com campos controlados|Description with controlled"
-      final.m1 = "Descrição livre|Free description"
-      final.m2 = "Comentários|Commentaries"
+      ini.m = "Descri\u00e7\u00e3o com campos controlados|Description with controlled"
+      final.m1 = "Descri\u00e7\u00e3o livre|Free description"
+      final.m2 = "Coment\u00e1rios|Commentaries"
       final.m3 = "Vouchers"
       final.m5 = "Origem|Origin"
-      final.m4 = "Bibliografia Referência|Reference"
+      final.m4 = "Bibliografia Refer\u00eancia|Reference"
 
       grep(ini.m, d0)+1 -> i0
       if (length(i0) > 0) {
@@ -139,12 +139,12 @@ flora_get_descriptions <- function(taxa=NULL,
       }
 
       # Description within free field
-      ini.m = "Descrição livre|Free description"
+      ini.m = "Descri\u00e7\u00e3o livre|Free description"
       final.m1 = "xxxxxxxxxx"
-      final.m2 = "Comentários|Commentaries"
+      final.m2 = "Coment\u00e1rios|Commentaries"
       final.m3 = "Vouchers"
       final.m5 = "Origem|Origin"
-      final.m4 = "Bibliografia Referência|Reference"
+      final.m4 = "Bibliografia Refer\u00eancia|Reference"
       unlist(strsplit(as.character(txt[[1]]), "\n", fixed=T)) -> d0
 
       grep(ini.m, d0)+1 -> i0

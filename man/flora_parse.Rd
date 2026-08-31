@@ -12,13 +12,13 @@ flora_parse(
 }
 \arguments{
 \item{path}{Character. Path to the local directory where the versioned FFB DwC-A
-folders were downloaded (usually created by \code{flora_download()}).}
+folders were downloaded (usually created by \code{\link{flora_download}}).}
 
 \item{version}{Character. One or more specific dataset versions to parse.
 Accepts:
 \itemize{
-  \item \code{"latest"} — parses the most recent dataset available in \code{path}.
-  \item \code{"all"} — parses all downloaded versions within the specified path.
+  \item \code{"latest"}: parses the most recent dataset available in \code{path}.
+  \item \code{"all"}: parses all downloaded versions within the specified path.
   \item A version string or vector of versions (e.g., \code{"393.418"}).
 }}
 
@@ -30,13 +30,13 @@ A named list of parsed DwC-A datasets, where each element corresponds to a versi
 folder (e.g., \code{"dwca_ffb_v393_418"}).
 Each list element includes:
 \itemize{
-  \item \code{$meta} — metadata describing the dataset structure.
-  \item \code{$data} — a nested list of parsed Darwin Core tables, including:
+  \item \code{$meta}: metadata describing the dataset structure.
+  \item \code{$data}: a nested list of parsed Darwin Core tables, including:
     \itemize{
-      \item \code{taxon.txt} — with a new standardized \code{taxonName} field.
-      \item \code{distribution.txt} — with separate \code{endemism} and
+      \item \code{taxon.txt}: with a new standardized \code{taxonName} field.
+      \item \code{distribution.txt}: with separate \code{endemism} and
             \code{phytogeographicDomain} columns.
-      \item \code{speciesprofile.txt} — with parsed \code{lifeForm}, \code{habitat},
+      \item \code{speciesprofile.txt}: with parsed \code{lifeForm}, \code{habitat},
             and \code{vegetationType} information.
     }
 }
@@ -54,8 +54,9 @@ This function processes and cleans FFB DwC-A data by:
   \item Generating a unified and standardized taxon name from available name components.
   \item Extracting structured data such as endemism status, phytogeographic domains,
         life forms, habitats, and vegetation types.
-  \item Returning all cleaned and parsed tables as a list for further analysis with
-        \code{\link{flora_records}} or other downstream functions.
+  \item Returning all cleaned and parsed tables as a list for further analysis,
+        or via \code{\link{flora_records}} and other downstream functions,
+        which reuse the same cached data automatically.
 }
 }
 \details{
@@ -63,8 +64,8 @@ The function works entirely **offline**, provided that the DwC-A datasets have b
 previously downloaded with \code{\link{flora_download}}.
 It is designed as the second step in the workflow:
 \enumerate{
-  \item \code{\link{flora_download}} — to download and store versioned DwC-A files.
-  \item \code{flora_parse()} — to parse and structure those files into a ready-to-use list.
+  \item \code{\link{flora_download}}: to download and store versioned DwC-A files.
+  \item \code{\link{flora_parse}}: to parse and structure those files into a ready-to-use list.
 }
 }
 \note{
@@ -73,20 +74,22 @@ the DwC-A datasets were downloaded beforehand using \code{\link{flora_download}}
 }
 \examples{
 \dontrun{
-# Step 1 — Download latest FFB DwC-A dataset
+# Step 1 - Download latest FFB DwC-A dataset
 flora_download(version = "latest",
                dir = "flora_download")
 
-# Step 2 — Parse local DwC-A dataset (works offline)
+# Step 2 - Parse local DwC-A dataset (works offline)
 dwca <- flora_parse(path = "flora_download",
                     version = "latest")
 
-# Step 3 — Explore parsed data
+# Step 3 - Explore parsed data
 names(dwca)
 names(dwca[["dwca_ffb_v393_418"]][["data"]])
 
-# Step 4 — Use with flora_records() for summaries
-records <- flora_records(dwca)
+# Step 4 - Filter the checklist with flora_records() (downloads/parses
+# automatically and reuses the cached data from Steps 1-2 above)
+records <- flora_records(taxon = "Fabaceae",
+                         taxonomicStatus = "NOME_ACEITO")
 }
 
 }

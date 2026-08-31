@@ -6,39 +6,42 @@ export(flora_get_children_taxa)
 export(flora_get_descriptions)
 export(flora_match)
 export(flora_parse)
+export(flora_records)
 export(flora_search)
 export(flora_version)
-import(dplyr)
-import(finch)
-import(magrittr)
-import(purrr)
-import(stringr)
-import(tidyr)
-import(utils)
-importFrom(dplyr,arrange)
-importFrom(dplyr,bind_rows)
-importFrom(dplyr,filter)
-importFrom(dplyr,if_all)
-importFrom(dplyr,mutate)
-importFrom(dplyr,relocate)
-importFrom(dplyr,rename)
-importFrom(dplyr,select)
-importFrom(dplyr,tibble)
+importFrom(dplyr,
+  arrange,
+  bind_rows,
+  desc,
+  everything,
+  filter,
+  if_all,
+  mutate,
+  relocate,
+  rename,
+  select,
+  tibble
+)
 importFrom(finch,dwca_read)
 importFrom(magrittr,"%>%")
 importFrom(pdftools,pdf_text)
 importFrom(purrr,pmap_chr)
 importFrom(rlang,.data)
 importFrom(stats,na.omit)
-importFrom(stringr,str_match)
-importFrom(stringr,str_replace)
-importFrom(stringr,str_split)
+importFrom(stringi,stri_trans_general)
+importFrom(stringr,
+  str_match,
+  str_replace,
+  str_split
+)
 importFrom(tibble,add_column)
 importFrom(tidyr,unnest)
-importFrom(utils,adist)
-importFrom(utils,download.file)
-importFrom(utils,setTxtProgressBar)
-importFrom(utils,txtProgressBar)
-importFrom(utils,unzip)
-importFrom(utils,write.csv)
+importFrom(utils,
+  adist,
+  download.file,
+  setTxtProgressBar,
+  txtProgressBar,
+  unzip,
+  write.csv
+)
 importFrom(webshot,webshot)

@@ -9,8 +9,6 @@
 coverage](https://codecov.io/gh/DBOSlab/floraR/graph/badge.svg)](https://app.codecov.io/gh/DBOSlab/floraR)
 [![Test
 Coverage](https://github.com/DBOSlab/floraR/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/DBOSlab/floraR/actions/workflows/test-coverage.yaml)
-[![CRAN
-Downloads](https://cranlogs.r-pkg.org/badges/grand-total/floraR)](https://cran.r-project.org/package=floraR)
 [![R-CMD-check](https://github.com/DBOSlab/floraR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DBOSlab/floraR/actions/workflows/R-CMD-check.yaml)
 [![License:
 MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,10 +18,12 @@ MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 taxonomic and distributional data from the [Flora e Funga do Brasil
 (FFB)](https://floradobrasil.jbrj.gov.br/consulta/) platform, maintained
 by the Rio de Janeiro Botanical Garden. It provides a comprehensive
-interface to download, parse, and explore Darwin Core Archive (DwC-A)
-datasets from the [FFB
+interface to download, parse, filter, and explore Darwin Core Archive
+(DwC-A) datasets from the [FFB
 IPT](https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil)
-data portal.
+data portal — from browsing the checklist by taxonomic/geographic/trait
+criteria to resolving and matching your own species name lists against
+it.
 
 The package is designed to streamline both data exploration for
 researchers and data curation workflows for taxonomic experts
@@ -48,13 +48,24 @@ library(floraR)
 
 ## Usage
 
-`floraR` provides a three-step workflow for working with Flora e Funga
-do Brasil data:
+`floraR` supports a full workflow for working with Flora e Funga do
+Brasil data:
 
 - Check available versions with `flora_version()`
 - Download datasets with `flora_download()`
-- Parse and analyze with `flora_parse()` and `flora_records()`  
-    
+- Parse datasets with `flora_parse()`
+- Filter and retrieve checklist records with `flora_records()`
+- Resolve your own species names against the checklist with
+  `flora_search()` and `flora_match()`
+- Explore the taxonomic hierarchy with `flora_get_children_taxa()`
+- Curate new records with `flora_get_descriptions()` and
+  `flora_build_matrix()`
+
+Most functions download and parse the FFB dataset automatically and
+cache it locally, so you rarely need to call
+`flora_download()`/`flora_parse()` yourself unless you want to inspect
+the raw data directly.  
+  
 
 #### *1. `flora_version`: Check available dataset versions*
 
@@ -80,7 +91,7 @@ versions_df[versions_df$Latest == TRUE, ]
 
 Download taxonomic and distributional records in Darwin Core Archive
 (DwC-A) format. The function supports downloading the latest version,
-specific versions, or all available versions..  
+specific versions, or all available versions.  
 
 ``` r
 library(floraR)
@@ -104,46 +115,106 @@ flora_download(version = "all", dir = "flora_download")
 #### *3. `flora_parse`: Parse downloaded DwC-A datasets*
 
 Parse and organize locally downloaded Flora e Funga do Brasil datasets
-for analysis. This function works offline once datasets are
-downloaded.  
+for analysis. This function works offline once datasets are downloaded,
+and returns a named list with a `taxon.txt`, `distribution.txt`, and
+`speciesprofile.txt` table (among others) per downloaded version.  
 
 ``` r
 library(floraR)
 
 # Parse the latest downloaded version
-dwca_data <- flora_parse(path = "flora_download", 
+dwca_data <- flora_parse(path = "flora_download",
                          version = "latest")
 
-# Parse all downloaded versions
-dwca_all <- flora_parse(path = "flora_download", 
-                        version = "all")
+# View structure of the parsed data
+names(dwca_data)
+names(dwca_data[["dwca_ffb_v393_418"]][["data"]])
 
-# Parse specific versions
-dwca_specific <- flora_parse(path = "flora_download", 
-                             version = c("393.418", "392.417"))
+# Access specific data tables directly
+taxon_data <- dwca_data[["dwca_ffb_v393_418"]][["data"]][["taxon.txt"]]
+distribution_data <- dwca_data[["dwca_ffb_v393_418"]][["data"]][["distribution.txt"]]
 ```
 
   
   
 
-#### *4. Explore parsed data*
+#### *4. `flora_records`: Filter and retrieve checklist records*
 
-Once parsed, you can explore the structured
-<a href="data:\" class="uri">data:\</a>
+Browse and filter the FFB checklist directly by taxonomic, geographic,
+and trait-based criteria — no input name list required. Downloads and
+parses the dataset automatically (like `flora_search()`, reusing the
+local cache on repeated calls).  
 
 ``` r
-# View structure of parsed data
-names(dwca_data)
-names(dwca_data[["dwca_ffb_v393_418"]][["data"]])
+library(floraR)
 
-# Access specific data tables
-taxon_data <- dwca_data[["dwca_ffb_v393_418"]][["data"]][["taxon.txt"]]
-distribution_data <- dwca_data[["dwca_ffb_v393_418"]][["data"]][["distribution.txt"]]
-species_profile <- dwca_data[["dwca_ffb_v393_418"]][["data"]][["speciesprofile.txt"]]
+# All accepted species in Fabaceae
+fabaceae <- flora_records(taxon = "Fabaceae",
+                          taxonomicStatus = "NOME_ACEITO")
 
-# View the first few rows
-head(taxon_data)
-head(distribution_data)
+# Accepted species endemic to Bahia
+bahia_endemics <- flora_records(state = "Bahia",
+                                endemism = TRUE,
+                                taxonomicStatus = "NOME_ACEITO")
+
+# Species in the Caatinga with a shrub life form
+caatinga_shrubs <- flora_records(phytogeographicDomain = "Caatinga",
+                                 lifeForm = "Arbusto")
+
+# Save the result to a CSV file
+flora_records(taxon = "Luetzelburgia", save = TRUE, dir = "flora_records")
+```
+
+  
+  
+
+#### *5. `flora_search` and `flora_match`: Resolve your own species names*
+
+Unlike `flora_records()`, which browses the checklist itself,
+`flora_search()` and `flora_match()` take a list of names *you already
+have* (e.g. from your own herbarium or field data) and resolve them
+against the FFB checklist — with exact matching first, then fuzzy
+(Levenshtein-distance) matching as a fallback for typos.  
+
+``` r
+library(floraR)
+
+# Resolve a single name (synonyms are resolved to their accepted name)
+flora_search("Mimosa pyrenea")
+
+# Resolve a list, flagging exact vs. fuzzy matches
+splist <- c("Mimosa sensitiva", "Swartzia simplex", "Inga edullis")
+flora_search(splist, show_correct = TRUE, progress_bar = TRUE)
+
+# Compare two independent name lists, aligning names that resolve to the
+# same accepted taxon (e.g. checking your list against a collaborator's)
+splist1 <- c("Mimosa sensitiva", "Swartzia simplex", "Inga edulis")
+splist2 <- c("Swartzia simplex var. grandiflora", "Inga edulis", "Mimosa pyrenea")
+flora_match(splist1, splist2, include_all = TRUE)
+```
+
+  
+  
+
+#### *6. `flora_get_children_taxa`: Explore the taxonomic hierarchy*
+
+Retrieve all child taxa (species, subspecies, varieties, genera, etc.)
+below a given taxonomic name and rank — useful for getting every species
+in a genus, every genus in a family, and so on.  
+
+``` r
+library(floraR)
+
+# All species in a genus
+flora_get_children_taxa(taxon_name = "Luetzelburgia",
+                        rank = "genus",
+                        child_rank = "species")
+
+# All genera in a family, including synonyms
+flora_get_children_taxa(taxon_name = "Fabaceae",
+                        rank = "family",
+                        child_rank = "genus",
+                        include_synonyms = TRUE)
 ```
 
   
@@ -154,7 +225,25 @@ head(distribution_data)
 `floraR` also supports taxonomic experts in curating and updating Flora
 e Funga do Brasil records. The package facilitates integration of new
 species names and records from global biodiversity repositories such as
-IPNI, REFLORA, and GBIF.  
+IPNI, REFLORA, and GBIF.
+
+`flora_get_descriptions()` scrapes the controlled-field and free-text
+descriptions from FFB taxon pages, and `flora_build_matrix()` turns the
+extracted descriptions into a character matrix (taxa x character states)
+ready for downstream comparison or trait analysis:  
+
+``` r
+library(floraR)
+
+taxa <- flora_get_children_taxa(taxon_name = "Luetzelburgia",
+                                rank = "genus",
+                                child_rank = "species")
+
+descriptions <- flora_get_descriptions(taxa, delay = 10)
+trait_matrix <- flora_build_matrix(descriptions[[1]])
+```
+
+  
   
 
 ## Key Features
@@ -164,11 +253,17 @@ IPNI, REFLORA, and GBIF.
 - Version Control: Track and download specific dataset versions
 - Offline Capability: Parse and analyze downloaded data without internet
   connection
+- Checklist Filtering: Browse and filter the FFB checklist by taxonomic,
+  geographic, and trait-based criteria without an input name list
+- Name Resolution: Exact and fuzzy matching of your own species lists
+  against the FFB checklist, including synonym resolution
+- Taxonomic Hierarchy: Retrieve child taxa at any rank, from class down
+  to species
 - Data Cleaning: Automated parsing and standardization of DwC-A fields
 - Taxonomic Workflows: Tools for data curation and integration with
   global repositories
 - Tidyverse Integration: Seamless integration with dplyr, tidyr, and
-  other tidyverse packages.  
+  other tidyverse packages  
     
 
 ## Documentation

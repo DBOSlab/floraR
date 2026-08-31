@@ -106,6 +106,7 @@
 
   log_line <- sprintf("[%s] Downloaded: %s | Records saved to: %s/%s.csv\n",
                       format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+                      nrow(df),
                       dir,
                       filename)
 
@@ -246,8 +247,8 @@
 
   if (genus_fuzzy) {
     cand_idx <- which(!is.na(taxon_df$taxonName))
-    dists    <- utils::adist(search_name, taxon_df$taxonName[cand_idx])[1L, ]
-    within   <- which(dists <= threshold)
+    dists <- utils::adist(search_name, taxon_df$taxonName[cand_idx])[1L, ]
+    within <- which(dists <= threshold)
     if (length(within) == 0L) return(NULL)
     rows <- cand_idx[within]
     d    <- dists[within]
@@ -292,7 +293,7 @@
 
   if (!is.na(status) && status == "SINONIMO" &&
       !is.na(taxon_df$acceptedNameUsageID[row_idx])) {
-    acc_id  <- as.character(taxon_df$acceptedNameUsageID[row_idx])
+    acc_id <- as.character(taxon_df$acceptedNameUsageID[row_idx])
 
     # Verificar se o acc_id existe no id_lookup
     acc_pos <- id_lookup[[acc_id]]
@@ -506,7 +507,7 @@
 
   if (progress_bar) close(pb)
 
-  # Verificar se todas as linhas têm as mesmas colunas
+  # Verify whether all lines have the same column
   result_final <- do.call(rbind, results)
   rownames(result_final) <- NULL
 

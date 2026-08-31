@@ -45,7 +45,7 @@ License: \tab MIT\cr
 }
 }
 \references{
-Cardoso, D. & Martins-Cunha, K. (2025). floraR: An R Package for
+Cardoso, D. (2025). floraR: An R Package for
 Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil
 Platform.
 }
@@ -63,9 +63,5 @@ Useful links:
 (ORCID: \href{https://orcid.org/0000-0001-7072-2656}{0000-0001-7072-2656};
 email: \email{domingoscardoso@jbrj.gov.br};
 Rio de Janeiro Botanical Garden, Brazil)
-
-\strong{Kelmer Martins-Cunha}\cr
-(ORCID: \href{https://orcid.org/0000-0002-0545-5966}{0000-0002-0545-5966};
-email: \email{kelmermartinscunha@gmail.com})
 }
 \keyword{package}

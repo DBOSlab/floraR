@@ -127,7 +127,7 @@ flora_download <- function(version = "latest",
       }, silent = TRUE)
 
       if (inherits(download_success, "try-error")) {
-        stop("❌️ No internet connection or no valid local dataset found")
+        stop("\u274C\uFE0F No internet connection or no valid local dataset found")
       }
 
       ex_dwca_folder = gsub("[.]", "_", paste0("dwca_ffb_v", summary_df$Version[1], "_latest"))
@@ -181,7 +181,7 @@ flora_download <- function(version = "latest",
     }, silent = TRUE)
 
     if (inherits(download_success, "try-error") && !tf) {
-      stop("❌️ No internet connection or no valid local dataset found")
+      stop("\u274C\uFE0F No internet connection or no valid local dataset found")
 
     } else {
 

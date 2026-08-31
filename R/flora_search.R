@@ -24,9 +24,9 @@
 #'   splist,
 #'   version = "latest",
 #'   max_distance = 0.2,
-#'   show_correct = FALSE,
-#'   genus_fuzzy  = FALSE,
-#'   progress_bar = FALSE,
+#'   show_correct = TRUE,
+#'   genus_fuzzy  = TRUE,
+#'   progress_bar = TRUE,
 #'   rm_flora_database = FALSE,
 #'   verbose = TRUE
 #' )

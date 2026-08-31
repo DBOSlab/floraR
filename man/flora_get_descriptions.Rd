@@ -33,8 +33,8 @@ A named list with two elements:
 Downloads printable PDF versions of Flora e Funga do Brasil (FFB) taxon pages
 for a set of species and extracts text from the description sections. The
 function attempts to recover two kinds of descriptions from each page:
-controlled descriptions ("Descrição com campos controlados") and free
-descriptions ("Descrição livre").
+controlled descriptions ("Descricao com campos controlados") and free
+descriptions ("Descricao livre").
 }
 \details{
 For each taxon, the function:
@@ -53,12 +53,12 @@ Failed extractions are returned together with the extracted descriptions.
 The function assumes that the printable FFB page contains recognizable
 section headers in Portuguese and/or English, such as:
 \itemize{
-  \item \code{"Descrição com campos controlados|Description with controlled"}
-  \item \code{"Descrição livre|Free description"}
-  \item \code{"Comentários|Commentaries"}
+  \item \code{"Descricao com campos controlados|Description with controlled"}
+  \item \code{"Descricao livre|Free description"}
+  \item \code{"Comentarios|Commentaries"}
   \item \code{"Vouchers"}
   \item \code{"Origem|Origin"}
-  \item \code{"Bibliografia Referência|Reference"}
+  \item \code{"Bibliografia Referencia|Reference"}
 }
 
 Text is extracted from the first PDF page only. Temporary output is always

@@ -34,7 +34,7 @@
 #' }
 #'
 #' @importFrom stringr str_match str_replace
-#' @importFrom dplyr tibble bind_rows filter mutate arrange select if_all
+#' @importFrom dplyr tibble bind_rows filter mutate arrange select if_all desc everything
 #' @importFrom magrittr "%>%"
 #'
 #' @export

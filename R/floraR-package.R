@@ -38,10 +38,6 @@
 #' email: \email{domingoscardoso@@jbrj.gov.br};
 #' Rio de Janeiro Botanical Garden, Brazil)
 #'
-#' @author \strong{Kelmer Martins-Cunha}\cr
-#' (ORCID: \href{https://orcid.org/0000-0002-0545-5966}{0000-0002-0545-5966};
-#' email: \email{kelmermartinscunha@@gmail.com})
-#'
 #' @keywords package
 #'
 #' @details \tabular{ll}{
@@ -52,7 +48,7 @@
 #' License: \tab MIT\cr
 #' }
 #'
-#' @references Cardoso, D. & Martins-Cunha, K. (2025). floraR: An R Package for
+#' @references Cardoso, D. (2025). floraR: An R Package for
 #' Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil
 #' Platform.
 #'
@@ -65,7 +61,6 @@
 #'   \item \url{https://ipt.jbrj.gov.br/jbrj} - FFB IPT data portal
 #' }
 #'
-#' @import stringr utils finch tidyr magrittr dplyr purrr
 #' @importFrom rlang .data
 "_PACKAGE"
 

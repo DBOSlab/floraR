@@ -88,7 +88,7 @@
 
 #_______________________________________________________________________________
 # Check the state input
-.arg_check_state <- function(x) {
+.arg_check_state <- function(x, return_abbrev = FALSE) {
 
   valid_states <- c("Acre" = "AC", "Alagoas" = "AL", "Amap\u00e1" = "AP", "Amazonas" = "AM",
                     "Bahia" = "BA", "Cear\u00e1" = "CE", "Distrito Federal" = "DF",
@@ -114,9 +114,9 @@
     match_acronym <- match(states_no_diacritics[i], valid_states_acronyms_no_diacritics)
 
     if (!is.na(match_full)) {
-      corrected_states[i] <- valid_states_full[match_full]
+      corrected_states[i] <- if (return_abbrev) valid_states[match_full] else valid_states_full[match_full]
     } else if (!is.na(match_acronym)) {
-      corrected_states[i] <- names(valid_states)[match_acronym]
+      corrected_states[i] <- if (return_abbrev) valid_states_acronyms[match_acronym] else names(valid_states)[match_acronym]
     } else {
       corrected_states[i] <- x[i]  # return as-is
     }
@@ -144,7 +144,7 @@
 
   if (!matches) {
     stop(paste0(
-      "Your input 'taxon' list must contain at least one name existing within the REFLORA collections.\n",
+      "Your input 'taxon' list must contain at least one name existing within the Flora e Funga do Brasil database.\n",
       "Check whether the input taxon list has any typo: ",
       paste(unmatched_taxa, collapse = ", ")
     ))
@@ -163,7 +163,7 @@
 
   if (length(matched_state) == 0) {
     stop(paste0(
-      "Your input 'state' list must contain at least one name existing within the REFLORA collections.\n",
+      "Your input 'state' list must contain at least one name existing within the Flora e Funga do Brasil database.\n",
       "Check whether the input state list has any typo: ",
       paste(unmatched_state, collapse = ", ")
     ))
