@@ -4,7 +4,7 @@
 
 * **Package name:** floraR  
 * **Version:** 1.0.0  
-* **Title:** Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform  
+* **Title:** Tools for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform  
 * **Authors:** Domingos Cardoso  
 * **Maintainer:** Domingos Cardoso <domingoscardoso@jbrj.gov.br>  
 * **License:** MIT  

@@ -4,7 +4,7 @@ citHeader("To cite the floraR package in publications, use:")
 
 bibentry(
   bibtype = "Manual",
-  title = "floraR: Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform",
+  title = "floraR: Tools for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform",
   author = c(
     person(given = "Domingos",
              family = "Cardoso",

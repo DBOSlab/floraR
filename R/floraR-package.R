@@ -31,7 +31,7 @@
 #'
 #' @aliases floraR-package
 #'
-#' @title Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform
+#' @title Tools for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform
 #'
 #' @author \strong{Domingos Cardoso}\cr
 #' (ORCID: \href{https://orcid.org/0000-0001-7072-2656}{0000-0001-7072-2656};
@@ -49,7 +49,7 @@
 #' }
 #'
 #' @references Cardoso, D. (2025). floraR: An R Package for
-#' Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil
+#' Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil
 #' Platform.
 #'
 #' @seealso

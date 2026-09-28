@@ -1,3 +1,16 @@
+# floraR (development version)
+
+### New features
+
+- `flora_species_gap()`: Find species of a genus of plants or algae that occur in Brazil but are still missing from FFB, combining two kinds of evidence: the species distributions of Plants of the World Online (POWO) and type specimens collected in Brazil (GBIF). Returns one table, one row per name, stating which source(s) reported it, with names reported by both listed first. POWO's data is read locally from 'rWCVPdata' by default, or live from ChecklistBank with `powo_source = "checklistbank"`; each GBIF name comes with a summary of its Brazilian type specimens. Names FFB holds under a different genus or spelling (e.g. *Luetzelburgia andrade-limae* vs. *L. andradelimae*) are recognised. Saves an `.xlsx` spreadsheet and an HTML report.
+
+- `flora_distribution_gap()`: Find candidate new Brazilian state records for a genus or species of plants or algae: states with specimen evidence in GBIF (and optionally REFLORA and speciesLink) that are not yet in its official FFB distribution. The HTML report lists the individual records behind each candidate state.
+- A workflow diagram of the package, in the README and on the website.
+
+### Bug fixes
+
+- `library(floraR)` no longer prints "Registered S3 method overwritten by 'hoardr'" when `httr` is already loaded. The `finch` package is now loaded quietly only when `flora_parse()` needs it.
+
 # floraR 1.0.0
 
 ## Initial Release
@@ -68,4 +81,4 @@ Please report bugs or issues at:
 
 ### Citation
 
-Cardoso, D. 2026. floraR: An R Package for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform. https://github.com/dboslab/floraR
+Cardoso, D. 2026. floraR: An R Package for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform. https://github.com/dboslab/floraR

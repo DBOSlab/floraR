@@ -1,0 +1,118 @@
+/* ── floraR HTML report stylesheet ───────────────────────────────────────── */
+
+body {
+  font-family: "Lato", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  color: #333333;
+  background-color: #fafafa;
+}
+
+/* Headings */
+h1.title {
+  color: #1F4D2B;
+  font-weight: 700;
+  font-size: 1.9em;
+  margin-bottom: 0.2em;
+}
+h3.subtitle {
+  color: #6c757d;
+  font-weight: 400;
+  font-size: 1.1em;
+  margin-top: 0;
+}
+h2, h3, h4 {
+  color: #1F4D2B;
+  font-weight: 600;
+}
+h2 { border-bottom: 2px solid #2F6D3B; padding-bottom: 6px; }
+
+/* TOC sidebar */
+.tocify-header { font-weight: 600; }
+.tocify-subheader { font-size: 0.92em; }
+
+/* ── KPI / stat boxes ─────────────────────────────────────────────────────── */
+.kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 18px 0 24px 0;
+}
+.kpi-box {
+  flex: 1 1 160px;
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.kpi-value {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.kpi-label {
+  font-size: 0.82em;
+  color: #555;
+  margin-top: 4px;
+}
+
+/* Colour variants (gold/green floraR family) */
+.kpi-gold   { background: #FCF3DE; border-left: 5px solid #B5791E; }
+.kpi-gold   .kpi-value { color: #8A5A15; }
+
+.kpi-green  { background: #EEF6EC; border-left: 5px solid #2F6D3B; }
+.kpi-green  .kpi-value { color: #1F4D2B; }
+
+.kpi-red    { background: #fde8ea; border-left: 5px solid #e63946; }
+.kpi-red    .kpi-value { color: #c0001a; }
+
+.kpi-amber  { background: #fef3c7; border-left: 5px solid #f59e0b; }
+.kpi-amber  .kpi-value { color: #b45309; }
+
+.kpi-gray   { background: #f1f3f5; border-left: 5px solid #868e96; }
+.kpi-gray   .kpi-value { color: #495057; }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+table.dataTable thead th {
+  background-color: #2F6D3B !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+table.dataTable tbody tr:hover { background-color: #EEF6EC !important; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+footer { margin-top: 3em; color: #333333}
+
+/* ── Tabset tabs ──────────────────────────────────────────────────────────── */
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover {
+  background-color: #2F6D3B;
+  color: #fff;
+  border-color: #2F6D3B;
+}
+.nav-tabs > li > a { color: #2F6D3B; }
+.nav-tabs > li > a:hover { background-color: #2F6D3B; }
+
+.author {
+  color: #6c757d !important;
+}
+
+.date {
+  color: #6c757d !important;
+}
+
+.author a {
+  color: #1F4D2B !important;
+  text-decoration: none;
+}
+
+.author a:hover {
+  color: #143820 !important;
+}
+
+.section a {
+  color: #1F4D2B !important;
+}
+
+.section a:hover {
+  color: #143820 !important;
+}

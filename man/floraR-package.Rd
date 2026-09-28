@@ -4,7 +4,7 @@
 \name{floraR-package}
 \alias{floraR}
 \alias{floraR-package}
-\title{Tools for Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil Platform}
+\title{Tools for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform}
 \description{
 The floraR package provides a comprehensive interface to the Flora e Funga do
 Brasil (FFB) Platform, maintained by the Rio de Janeiro Botanical Garden.
@@ -46,7 +46,7 @@ License: \tab MIT\cr
 }
 \references{
 Cardoso, D. (2025). floraR: An R Package for
-Accessing, Analyzing, and Curating Data from the Flora e Funga do Brasil
+Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil
 Platform.
 }
 \seealso{

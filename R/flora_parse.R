@@ -95,7 +95,6 @@
 #'                          taxonomicStatus = "NOME_ACEITO")
 #' }
 #'
-#' @importFrom finch dwca_read
 #' @importFrom dplyr mutate select relocate filter rename tibble
 #' @importFrom tidyr unnest
 #' @importFrom stringr str_match
@@ -130,6 +129,13 @@ flora_parse <- function(path = NULL,
   }
 
   # Calling all dwca files
+
+  # 'finch' is deliberately not imported into floraR's namespace, so that
+  # library(floraR) does not load it. Loading 'finch' also loads 'hoardr',
+  # whose print.cache_info method overrides httr's and prints a
+  # "Registered S3 method overwritten" note whenever httr is already loaded.
+  # Loading it here, quietly, keeps that note out of the user's console.
+  suppressMessages(loadNamespace("finch"))
 
   if (verbose) {
     message("Parsing data from dwca folders...\n\n")
