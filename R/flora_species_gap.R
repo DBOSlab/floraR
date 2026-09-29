@@ -293,7 +293,7 @@ flora_species_gap <- function(taxon,
 
   if (verbose) {
     n_both <- sum(result$Found_in == "POWO; GBIF")
-    message(sprintf("\n✓ %d species of '%s' found missing from FFB%s", nrow(result),
+    message(sprintf("\n\u2713 %d species of '%s' found missing from FFB%s", nrow(result),
                     taxon, if (length(sources) == 2) {
                       sprintf(" (%d reported by both POWO and GBIF)", n_both)
                     } else ""))

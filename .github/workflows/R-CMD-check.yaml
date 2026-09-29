@@ -41,7 +41,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          # rWCVPdata (Suggests) is not on CRAN and pak ignores Additional_repositories;
+          # the tests mock it, so skip installing it here
+          extra-packages: any::rcmdcheck, rWCVPdata=?ignore
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2

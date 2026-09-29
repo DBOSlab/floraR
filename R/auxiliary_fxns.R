@@ -561,12 +561,12 @@
 # The 26 Brazilian states plus the Federal District, used by
 # .location_mentions_brazil() to recognise a Brazilian state named in POWO's
 # free-text range (e.g. "Brazil (Bahia)") ####
-.br_states <- c("Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará",
-                "Distrito Federal", "Espírito Santo", "Goiás",
-                "Maranhão", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais",
-                "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí",
+.br_states <- c("Acre", "Alagoas", "Amap\u00e1", "Amazonas", "Bahia", "Cear\u00e1",
+                "Distrito Federal", "Esp\u00edrito Santo", "Goi\u00e1s",
+                "Maranh\u00e3o", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais",
+                "Par\u00e1", "Para\u00edba", "Paran\u00e1", "Pernambuco", "Piau\u00ed",
                 "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul",
-                "Rondônia", "Roraima", "Santa Catarina", "São Paulo",
+                "Rond\u00f4nia", "Roraima", "Santa Catarina", "S\u00e3o Paulo",
                 "Sergipe", "Tocantins")
 
 
@@ -672,7 +672,7 @@
                         ifelse(dist$introduced %in% 1, " (introduced)", "")))
   dist$label <- paste0(dist$area, flag)
   collapse <- function(ids, keep) {
-    if (!any(keep)) return(setNames(character(0), character(0)))
+    if (!any(keep)) return(stats::setNames(character(0), character(0)))
     tapply(dist$label[keep], dist$plant_name_id[keep],
            function(x) paste(sort(unique(x)), collapse = "; "))
   }
@@ -1089,14 +1089,14 @@
 # do/da/de ..." and "State of ..." prefixes, and "Brasilia" for the Federal
 # District. Values that are not a Brazilian state are returned as NA. ####
 .normalize_br_state <- function(x) {
-  states <- c("Acre" = "AC", "Alagoas" = "AL", "Amapá" = "AP", "Amazonas" = "AM",
-              "Bahia" = "BA", "Ceará" = "CE", "Distrito Federal" = "DF",
-              "Espírito Santo" = "ES", "Goiás" = "GO", "Maranhão" = "MA",
+  states <- c("Acre" = "AC", "Alagoas" = "AL", "Amap\u00e1" = "AP", "Amazonas" = "AM",
+              "Bahia" = "BA", "Cear\u00e1" = "CE", "Distrito Federal" = "DF",
+              "Esp\u00edrito Santo" = "ES", "Goi\u00e1s" = "GO", "Maranh\u00e3o" = "MA",
               "Mato Grosso" = "MT", "Mato Grosso do Sul" = "MS", "Minas Gerais" = "MG",
-              "Pará" = "PA", "Paraíba" = "PB", "Paraná" = "PR", "Pernambuco" = "PE",
-              "Piauí" = "PI", "Rio de Janeiro" = "RJ", "Rio Grande do Norte" = "RN",
-              "Rio Grande do Sul" = "RS", "Rondônia" = "RO", "Roraima" = "RR",
-              "Santa Catarina" = "SC", "São Paulo" = "SP", "Sergipe" = "SE",
+              "Par\u00e1" = "PA", "Para\u00edba" = "PB", "Paran\u00e1" = "PR", "Pernambuco" = "PE",
+              "Piau\u00ed" = "PI", "Rio de Janeiro" = "RJ", "Rio Grande do Norte" = "RN",
+              "Rio Grande do Sul" = "RS", "Rond\u00f4nia" = "RO", "Roraima" = "RR",
+              "Santa Catarina" = "SC", "S\u00e3o Paulo" = "SP", "Sergipe" = "SE",
               "Tocantins" = "TO")
   key <- function(s) {
     s <- tolower(stringi::stri_trans_general(s, "Latin-ASCII"))

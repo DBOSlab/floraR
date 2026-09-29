@@ -54,7 +54,7 @@ Useful links:
 \itemize{
   \item \url{https://dboslab.github.io/floraR-website/} - Package documentation website
   \item \url{https://github.com/DBOSlab/floraR} - Source code and issue tracker
-  \item \url{https://floradobrasil.jbrj.gov.br/} - Flora e Funga do Brasil platform
+  \item \url{https://floradobrasil.jbrj.gov.br/consulta/} - Flora e Funga do Brasil platform
   \item \url{https://ipt.jbrj.gov.br/jbrj} - FFB IPT data portal
 }
 }
