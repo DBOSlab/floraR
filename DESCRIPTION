@@ -8,7 +8,12 @@ Authors@R:
              family = "Cardoso",
              role = c("aut", "cre", "cph"),
              email = "domingoscardoso@jbrj.gov.br",
-             comment = c(ORCID = "0000-0001-7072-2656"))
+             comment = c(ORCID = "0000-0001-7072-2656")),
+    person(given = "Marcelo",
+             family = "Reginato",
+             role = c("aut", "cph"),
+             email = "mreginato@ufrgs.br",
+             comment = c(ORCID = "0000-0002-3511-6586"))
     )
 Maintainer: Domingos Cardoso <domingoscardoso@jbrj.gov.br>
 Description: The 'floraR' package provides a comprehensive interface to the 
@@ -53,7 +58,7 @@ Remotes:
 Additional_repositories: https://matildabrown.github.io/drat
 URL:
     https://dboslab.github.io/floraR-website/,
-    https://github.com/dboslab/floraR
+    https://github.com/DBOSlab/floraR
 BugReports: https://github.com/DBOSlab/floraR/issues
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

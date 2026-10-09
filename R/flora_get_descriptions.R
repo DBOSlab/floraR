@@ -56,6 +56,9 @@
 #'
 #' @seealso \code{\link{flora_get_children_taxa}}, \code{\link{flora_build_matrix}}
 #'
+#' @author
+#' Marcelo Reginato & Domingos Cardoso
+#'
 #' @examples
 #' \dontrun{
 #' taxa <- flora_records(taxon = "Luetzelburgia",

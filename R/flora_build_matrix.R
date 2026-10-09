@@ -30,16 +30,19 @@
 #'
 #' @seealso \code{\link{flora_get_descriptions}}
 #'
+#' @author
+#' Marcelo Reginato
+#'
 #' @examples
 #' \dontrun{
 #' descriptions <- flora_get_descriptions(taxa, delay = 10)
 #' mat_control <- flora_build_matrix(descriptions[[1]])
 #' }
-#' 
-#' @export 
+#'
+#' @export
 
 flora_build_matrix <- function(descriptions=NULL) {
-  
+
   if (length(descriptions) == 2) {
     descriptions[[1]] -> x
     #length(x)
@@ -48,12 +51,12 @@ flora_build_matrix <- function(descriptions=NULL) {
     descriptions[[1]] -> descriptions
     .buildMatrix(descriptions) -> mat
   } else {
-    #length(descriptions) 
+    #length(descriptions)
     descriptions[which(lapply(descriptions, is.null) == F)] -> descriptions
-    #length(descriptions) 
+    #length(descriptions)
     .buildMatrix(descriptions) -> mat
   }
-  
+
   return(mat)
 }
 
@@ -65,11 +68,11 @@ flora_build_matrix <- function(descriptions=NULL) {
   unlist(lapply(strsplit(d0, ":"), "[", 1)) -> chars.main
   unlist(lapply(strsplit(d0, ";"), length)) -> n
   rep(chars.main, n) -> chars.all
-  
+
   dat <- matrix(ncol=length(chars.all), nrow=length(descriptions))
   colnames(dat) <- chars.all
   rownames(dat) <- names(descriptions)
-  
+
   for (i in 1:length(descriptions)) {
     descriptions[[i]] -> d0
     trimws(unlist(strsplit(d0, ". ", fixed=T))) -> d0

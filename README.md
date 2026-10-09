@@ -343,9 +343,9 @@ Full function documentation and articles are available at the `floraR`
 
 ## Citation
 
-Cardoso, D. 2026. floraR: An R Package for Accessing, Analyzing, and
-Curating Plant and Algae Data from the Flora e Funga do Brasil Platform.
-<https://github.com/dboslab/floraR>
+Cardoso, D. & Reginato, M. 2026. floraR: An R Package for Accessing,
+Analyzing, and Curating Plant and Algae Data from the Flora e Funga do
+Brasil Platform. <https://github.com/dboslab/floraR>
 
 ## Contributing
 

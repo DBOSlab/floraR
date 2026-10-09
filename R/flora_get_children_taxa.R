@@ -63,6 +63,9 @@
 #'     for repeated searches).
 #' }
 #'
+#' @author
+#' Marcelo Reginato & Domingos Cardoso
+#'
 #' @examples
 #' \dontrun{
 #' # Get all species in a genus (direct children)

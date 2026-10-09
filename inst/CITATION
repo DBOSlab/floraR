@@ -10,7 +10,12 @@ bibentry(
              family = "Cardoso",
              role = c("aut", "cre", "cph"),
              email = "domingoscardoso@jbrj.gov.br",
-             comment = c(ORCID = "0000-0001-7072-2656"))
+             comment = c(ORCID = "0000-0001-7072-2656")),
+    person(given = "Marcelo",
+             family = "Reginato",
+             role = c("aut", "cph"),
+             email = "mreginato@ufrgs.br",
+             comment = c(ORCID = "0000-0002-3511-6586"))
   ),
   year = 2026,
   note = "R package version 1.0.0",
