@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 <!-- badges: end -->
 
-`floraR` is an R package for accessing, analyzing, and curating taxonomic and distributional data on plants and algae from the [Flora e Funga do Brasil (FFB)](https://floradobrasil.jbrj.gov.br/consulta/) platform, maintained by the Rio de Janeiro Botanical Garden. It provides a comprehensive interface to download, parse, filter, and explore Darwin Core Archive (DwC-A) datasets from the [FFB IPT](https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil) data portal — from browsing the checklist by taxonomic/geographic/trait criteria to resolving and matching your own species name lists against it.
+`floraR` is an R package for accessing, analyzing, and curating taxonomic and distributional data on plants and algae from the [Flora e Funga do Brasil (FFB)](https://floradobrasil.jbrj.gov.br/consulta/) platform, maintained by the [Rio de Janeiro Botanical Garden](https://www.gov.br/jbrj/pt-br). It provides a comprehensive interface to download, parse, filter, and explore Darwin Core Archive (DwC-A) datasets from the [FFB IPT](https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil) data portal — from browsing the checklist by taxonomic/geographic/trait criteria to resolving and matching your own species name lists against it.
 
 But `floraR` is designed to do more than retrieve data from FFB: it is meant to help taxonomists expand the current FFB monographs. By cross-checking FFB against global resources - the species distributions of [Plants of the World Online](https://powo.science.kew.org) and the type specimens collected in Brazil that herbaria publish through [GBIF](https://www.gbif.org) - it points to species that are recorded in Brazil but not yet treated in FFB, giving specialists a concrete starting point for bringing each monograph closer to a complete account of the Brazilian flora.
 
@@ -275,7 +275,7 @@ Full function documentation and articles are available at the `floraR` [website]
 
 
 ## Citation
-Cardoso, D. & Reginato, M. 2026. floraR: An R Package for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform. https://github.com/dboslab/floraR
+Cardoso, D., Jordão, L. & Reginato, M. 2026. floraR: An R Package for Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil Platform. https://github.com/DBOSlab/floraR
 
 
 ## Contributing

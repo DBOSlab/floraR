@@ -17,9 +17,10 @@ MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 `floraR` is an R package for accessing, analyzing, and curating
 taxonomic and distributional data on plants and algae from the [Flora e
 Funga do Brasil (FFB)](https://floradobrasil.jbrj.gov.br/consulta/)
-platform, maintained by the Rio de Janeiro Botanical Garden. It provides
-a comprehensive interface to download, parse, filter, and explore Darwin
-Core Archive (DwC-A) datasets from the [FFB
+platform, maintained by the [Rio de Janeiro Botanical
+Garden](https://www.gov.br/jbrj/pt-br). It provides a comprehensive
+interface to download, parse, filter, and explore Darwin Core Archive
+(DwC-A) datasets from the [FFB
 IPT](https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil)
 data portal — from browsing the checklist by taxonomic/geographic/trait
 criteria to resolving and matching your own species name lists against
@@ -343,9 +344,9 @@ Full function documentation and articles are available at the `floraR`
 
 ## Citation
 
-Cardoso, D. & Reginato, M. 2026. floraR: An R Package for Accessing,
-Analyzing, and Curating Plant and Algae Data from the Flora e Funga do
-Brasil Platform. <https://github.com/dboslab/floraR>
+Cardoso, D., Jordão, L. & Reginato, M. 2026. floraR: An R Package for
+Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e
+Funga do Brasil Platform. <https://github.com/DBOSlab/floraR>
 
 ## Contributing
 
