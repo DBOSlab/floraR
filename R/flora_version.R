@@ -42,7 +42,12 @@
 flora_version <- function() {
 
   # Get raw metadata from FFB repository
-  ipt_metadata <- readLines("https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil",
+  ipt_connection <- base::url(
+    "https://ipt.jbrj.gov.br/jbrj/resource?r=lista_especies_flora_brasil",
+    headers = .ipt_http_headers()
+  )
+  on.exit(close(ipt_connection), add = TRUE)
+  ipt_metadata <- readLines(ipt_connection,
                             encoding = "UTF-8",
                             warn = F)
 
