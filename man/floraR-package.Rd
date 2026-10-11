@@ -34,20 +34,20 @@ facilitates data curation and integration of new records into the FFB
 platform.
 
 For the most recent version of floraR, please visit the package's
-GitHub repository (\url{https://github.com/dboslab/floraR}).
+GitHub repository (\url{https://github.com/DBOSlab/floraR}).
 
 \tabular{ll}{
 Package: \tab floraR\cr
 Type: \tab Package\cr
 Version: \tab 1.0.0\cr
-Date: \tab 2025-02-25\cr
+Date: \tab 2026-10-09\cr
 License: \tab MIT\cr
 }
 }
 \references{
-Cardoso, D. (2025). floraR: An R Package for
-Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga do Brasil
-Platform.
+Cardoso, D. & Reginato, M. (2026). floraR: An R Package for
+Accessing, Analyzing, and Curating Plant and Algae Data from the Flora e Funga
+do Brasil Platform.
 }
 \seealso{
 Useful links:

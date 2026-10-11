@@ -253,3 +253,4 @@ flora_parse <- function(path = NULL,
 
   return(dwca_files)
 }
+

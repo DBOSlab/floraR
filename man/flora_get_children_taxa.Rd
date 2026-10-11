@@ -108,3 +108,6 @@ genera <- flora_get_children_taxa(
 }
 
 }
+\author{
+Marcelo Reginato & Domingos Cardoso
+}

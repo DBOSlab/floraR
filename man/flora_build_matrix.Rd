@@ -48,3 +48,6 @@ mat_control <- flora_build_matrix(descriptions[[1]])
 \seealso{
 \code{\link{flora_get_descriptions}}
 }
+\author{
+Marcelo Reginato
+}

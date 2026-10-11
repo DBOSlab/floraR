@@ -69,7 +69,7 @@ A \code{data.frame}, one row per Brazilian state with any evidence for
   \item{In_FFB_distribution}{Logical; whether FFB already lists this state for the taxon.}
   \item{GBIF_records}{Number of GBIF occurrence records in this state (when
     \code{"gbif"} is among \code{sources}).}
-  \item{REFLORA_records}{Number of REFLORA specimens in this state (when
+  \item{Reflora_records}{Number of Reflora specimens in this state (when
     \code{"reflora"} is among \code{sources} and \pkg{refloraR} is installed).}
   \item{speciesLink_records}{Number of speciesLink records in this state (when
     \code{"speciesLink"} is among \code{sources} and a key is given).}
@@ -105,7 +105,7 @@ FFB, the distribution of its accepted name is used.
     taxa are included. All states are counted in a single request.}
   \item{\code{"reflora"}}{REFLORA herbarium specimens, via
     \code{\link[refloraR]{reflora_records}} (requires the \pkg{refloraR} package).
-    Note that the first use downloads the REFLORA herbarium archives - several
+    Note that the first use downloads the Reflora herbarium archives - several
     gigabytes - which \pkg{refloraR} then caches for later calls.}
   \item{\code{"speciesLink"}}{speciesLink's API, which requires a free API key
     (\code{specieslink_key}; create one at \url{https://specieslink.net}).}

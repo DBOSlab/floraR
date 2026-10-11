@@ -27,7 +27,7 @@
 #'     taxa are included. All states are counted in a single request.}
 #'   \item{\code{"reflora"}}{REFLORA herbarium specimens, via
 #'     \code{\link[refloraR]{reflora_records}} (requires the \pkg{refloraR} package).
-#'     Note that the first use downloads the REFLORA herbarium archives - several
+#'     Note that the first use downloads the Reflora herbarium archives - several
 #'     gigabytes - which \pkg{refloraR} then caches for later calls.}
 #'   \item{\code{"speciesLink"}}{speciesLink's API, which requires a free API key
 #'     (\code{specieslink_key}; create one at \url{https://specieslink.net}).}
@@ -104,7 +104,7 @@
 #'   \item{In_FFB_distribution}{Logical; whether FFB already lists this state for the taxon.}
 #'   \item{GBIF_records}{Number of GBIF occurrence records in this state (when
 #'     \code{"gbif"} is among \code{sources}).}
-#'   \item{REFLORA_records}{Number of REFLORA specimens in this state (when
+#'   \item{Reflora_records}{Number of Reflora specimens in this state (when
 #'     \code{"reflora"} is among \code{sources} and \pkg{refloraR} is installed).}
 #'   \item{speciesLink_records}{Number of speciesLink records in this state (when
 #'     \code{"speciesLink"} is among \code{sources} and a key is given).}
@@ -212,7 +212,7 @@ flora_distribution_gap <- function(taxon,
     }
   }
 
-  reflora_df <- data.frame(State = character(0), REFLORA_records = integer(0),
+  reflora_df <- data.frame(State = character(0), Reflora_records = integer(0),
                            stringsAsFactors = FALSE)
   reflora_result <- NULL
   if ("reflora" %in% sources) {
@@ -238,7 +238,7 @@ flora_distribution_gap <- function(taxon,
         st <- st[!is.na(st)]
         if (length(st) > 0) {
           tab <- table(st)
-          reflora_df <- data.frame(State = names(tab), REFLORA_records = as.integer(tab),
+          reflora_df <- data.frame(State = names(tab), Reflora_records = as.integer(tab),
                                    stringsAsFactors = FALSE)
         }
       }
@@ -295,7 +295,7 @@ flora_distribution_gap <- function(taxon,
     v
   }
   if ("gbif" %in% sources) result$GBIF_records <- fill(gbif_df, "GBIF_records")
-  if ("reflora" %in% sources) result$REFLORA_records <- fill(reflora_df, "REFLORA_records")
+  if ("reflora" %in% sources) result$Reflora_records <- fill(reflora_df, "Reflora_records")
   if ("speciesLink" %in% sources) {
     result$speciesLink_records <- fill(splink_df, "speciesLink_records")
   }
@@ -319,7 +319,7 @@ flora_distribution_gap <- function(taxon,
     source_summary <- data.frame(
       Source = c("FFB (official)", "GBIF", "REFLORA", "speciesLink"),
       States = c(length(ffb_states), nrow(gbif_df), nrow(reflora_df), nrow(splink_df)),
-      Records = c(NA_integer_, sum(gbif_df$GBIF_records), sum(reflora_df$REFLORA_records),
+      Records = c(NA_integer_, sum(gbif_df$GBIF_records), sum(reflora_df$Reflora_records),
                   sum(splink_df$speciesLink_records)),
       stringsAsFactors = FALSE
     )

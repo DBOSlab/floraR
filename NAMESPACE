@@ -24,6 +24,7 @@ importFrom(dplyr,
   select,
   tibble
 )
+importFrom(finch,dwca_read)
 importFrom(jsonlite,fromJSON)
 importFrom(magrittr,"%>%")
 importFrom(openxlsx,write.xlsx)
