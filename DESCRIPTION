@@ -12,7 +12,7 @@ Authors@R:
       person(given = "Lucas",
              family = "Jordão",
              role = c("aut", "cph"),
-             email = "lucasjordao@jbrj.gov.br ",
+             email = "lucasjordao@jbrj.gov.br",
              comment = c(ORCID = "0000-0002-9501-0548")),
       person(given = "Marcelo",
              family = "Reginato",
