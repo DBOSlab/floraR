@@ -40,6 +40,9 @@ column names.
 }
 \examples{
 \dontrun{
+taxa <- flora_records(taxon = "Luetzelburgia",
+                      taxonRank = "ESPECIE",
+                      taxonomicStatus = "NOME_ACEITO")
 descriptions <- flora_get_descriptions(taxa, delay = 10)
 mat_control <- flora_build_matrix(descriptions[[1]])
 }

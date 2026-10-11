@@ -67,6 +67,7 @@ written to a file named \code{temp.pdf} in the working directory.
 \examples{
 \dontrun{
 taxa <- flora_records(taxon = "Luetzelburgia",
+                      taxonRank = "ESPECIE",
                       taxonomicStatus = "NOME_ACEITO")
 
 descriptions <- flora_get_descriptions(taxa, delay = 10)
