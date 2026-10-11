@@ -286,7 +286,7 @@ gap <- flora_distribution_gap(taxon = "Luetzelburgia auriculata")
 gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
                                  state = c("Pernambuco", "Paraiba"))
 
-# Adding REFLORA herbarium specimens (requires refloraR)
+# Adding Reflora herbarium specimens (requires refloraR)
 gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
                                       sources = c("gbif", "reflora"))
 ```
@@ -296,7 +296,7 @@ gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
 `floraR` also supports taxonomic experts in curating and updating Flora
 e Funga do Brasil records. The package facilitates integration of new
 species names and records from global biodiversity repositories such as
-IPNI, Plants of the World Online (POWO), REFLORA, and GBIF.
+IPNI, Plants of the World Online (POWO), Reflora, and GBIF.
 
 `flora_get_descriptions()` scrapes the controlled-field and free-text
 descriptions from FFB taxon pages, and `flora_build_matrix()` turns the
