@@ -74,8 +74,8 @@
 #'
 #' @export
 
-flora_get_descriptions <- function(taxa=NULL,
-                                   delay=10,
+flora_get_descriptions <- function(taxa = NULL,
+                                   delay = 10,
                                    verbose = TRUE) {
   ## If there is any error, change the timeout in the javascript
 
@@ -93,7 +93,10 @@ flora_get_descriptions <- function(taxa=NULL,
     taxa$references[i] -> u0
     paste(u0, "&action=print", sep="") -> u0
 
-    try(webshot::webshot(u0, file="temp.pdf", delay=delay, useragent = "Mozilla/5.0 (Macintosh; Intel Mac OS X"))
+    try(webshot2::webshot(u0,
+                          file = "temp.pdf",
+                          delay = delay,
+                          useragent = .ffb_http_headers()))
 
     if (file.exists("temp.pdf")) {
 
@@ -202,3 +205,6 @@ flora_get_descriptions <- function(taxa=NULL,
   return(descriptions)
 }
 
+.ffb_http_headers <- function() {
+  c(`User-Agent` = "Mozilla/5.0 (compatible; floraR/1; Linux)")
+}
