@@ -298,10 +298,11 @@ e Funga do Brasil records. The package facilitates integration of new
 species names and records from global biodiversity repositories such as
 IPNI, Plants of the World Online (POWO), Reflora, and GBIF.
 
-`flora_get_descriptions()` scrapes the controlled-field and free-text
-descriptions from FFB taxon pages, and `flora_build_matrix()` turns the
-extracted descriptions into a character matrix (taxa x character states)
-ready for downstream comparison or trait analysis:
+`flora_get_descriptions()` reads the controlled-field and free-text
+descriptions from FFB taxon pages, and `flora_build_matrix()` turns them
+into a matrix ready for downstream comparison or trait analysis: taxa x
+character states for the controlled descriptions, and taxa x organs
+(Habit, Leaf, Flower, Seed, …) for the free descriptions:
 
 ``` r
 library(floraR)
@@ -311,7 +312,9 @@ taxa <- flora_get_children_taxa(taxon_name = "Luetzelburgia",
                                 child_rank = "species")
 
 descriptions <- flora_get_descriptions(taxa, delay = 10)
-trait_matrix <- flora_build_matrix(descriptions[[1]])
+
+mat_control <- flora_build_matrix(descriptions[[1]])  # character states
+mat_free <- flora_build_matrix(descriptions[[2]])     # organs
 ```
 
 ## Key Features

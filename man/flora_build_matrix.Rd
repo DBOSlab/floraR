@@ -4,39 +4,60 @@
 \alias{flora_build_matrix}
 \title{Build a character matrix from extracted descriptions}
 \usage{
-flora_build_matrix(descriptions = NULL)
+flora_build_matrix(descriptions = NULL, type = c("auto", "controlled", "free"))
 }
 \arguments{
 \item{descriptions}{A named list of description strings, usually one of the
-outputs from \code{flora_get_descriptions()}, such as
-\code{descriptions[[1]]}. If failures were returned together with
+outputs from \code{flora_get_descriptions()}, such as \code{descriptions[[1]]}
+or \code{descriptions[[2]]}. If failures were returned together with
 descriptions, the function uses only the extracted-description component.}
+
+\item{type}{Character. Which kind of descriptions these are: \code{"auto"}
+(default) detects it from the text, or set \code{"controlled"} or
+\code{"free"} explicitly.}
 }
 \value{
-A character matrix with taxa as rows and parsed character states as
-  columns.
+A character matrix with taxa as rows: for controlled descriptions, one
+  column per character state; for free descriptions, one column per organ.
 }
 \description{
-Converts extracted Flora e Funga do Brasil description text into a character
-matrix, where rows correspond to taxa and columns correspond to character
-states parsed from the description strings.
+Converts extracted Flora e Funga do Brasil description text into a matrix with
+taxa as rows, from either kind of description returned by
+\code{\link{flora_get_descriptions}}:
+\itemize{
+  \item \strong{controlled descriptions} (\code{descriptions[[1]]}) become a
+    taxon-by-character-state matrix, one column per state;
+  \item \strong{free descriptions} (\code{descriptions[[2]]}) become a
+    taxon-by-organ matrix, one column per organ (e.g. Habit, Leaf, Panicle,
+    Flower, Samara, Seed), each cell holding that organ's description.
+}
 }
 \details{
-This function is a wrapper around an internal parser that removes
-\code{NULL} entries and handles the nested output structure returned by
-\code{flora_get_descriptions()} when failures are present.
+If \code{descriptions} is the list returned by \code{flora_get_descriptions()}
+when some taxa failed - an unnamed list of the extracted descriptions and the
+failed taxon names - only the extracted descriptions are used. In both cases,
+\code{NULL} descriptions are removed before the matrix is built.
 
+\strong{Controlled descriptions} follow a fixed template, in which character
+categories are separated by periods, category names are separated from their
+values by colons, and multiple states are separated by semicolons (e.g.
+\code{"Leaf: leaflet number 3 to 7; leaflet margin entire. Flower: ..."}). The
+first description defines the matrix columns; a taxon whose description does
+not match that template is left empty.
 
-If \code{descriptions} has length 2, the function assumes the first element
-contains the actual description list and the second element contains failed
-taxon names. In both cases, \code{NULL} descriptions are removed before the
-matrix is built.
-
-Description strings are expected to follow a semi-structured format in which
-character categories are separated by periods, category names are separated
-from their values by colons, and multiple states are separated by semicolons.
-The first description is used to define the expected matrix structure and
-column names.
+\strong{Free descriptions} are prose written one sentence (or more) per organ,
+each starting with the organ's name (e.g. \code{"Tree to 10 m; branchlets
+sericeous. Leaves 12-30 cm long, ... Panicles erect, ... Seeds 12-25 mm long."}).
+The first sentence is the \code{Habit}; every later sentence is assigned to the
+organ named by its first word, singularised so that e.g. "Seeds" and "Seed"
+share one column. Columns are aligned by organ name across all taxa, so taxa
+that describe different organs or the same organs in another order still line
+up; an organ a taxon does not describe is \code{NA}. Sentences are split at a
+period followed by a capital letter, but not after a person's initial (as in a
+cited specimen, "M. Nee 34997") or a common abbreviation ("cf.", "ca.",
+"e.g.", "var."), and decimals ("1.5 m") never split. As a safeguard, a sentence
+starting with a word that opens sentences in fewer than a third of the taxa is
+not treated as an organ, and is appended to the preceding organ's text.
 }
 \examples{
 \dontrun{
@@ -44,7 +65,12 @@ taxa <- flora_records(taxon = "Luetzelburgia",
                       taxonRank = "ESPECIE",
                       taxonomicStatus = "NOME_ACEITO")
 descriptions <- flora_get_descriptions(taxa, delay = 10)
+
+# Taxon-by-character-state matrix from the controlled descriptions
 mat_control <- flora_build_matrix(descriptions[[1]])
+
+# Taxon-by-organ matrix from the free descriptions
+mat_free <- flora_build_matrix(descriptions[[2]])
 }
 
 }
@@ -52,5 +78,5 @@ mat_control <- flora_build_matrix(descriptions[[1]])
 \code{\link{flora_get_descriptions}}
 }
 \author{
-Marcelo Reginato
+Marcelo Reginato & Domingos Cardoso
 }

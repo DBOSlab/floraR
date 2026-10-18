@@ -9,6 +9,9 @@
 
 ### Bug fixes
 
+- `flora_build_matrix()` now also handles free descriptions (`descriptions[[2]]`), turning them into a taxon-by-organ matrix (Habit, Leaf, Panicle, Flower, Samara, Seed, ...) aligned by organ across taxa. Before, it treated the first taxon's sentences as column names and left every other taxon empty. The kind of description is detected automatically, or set with `type = "controlled"` or `type = "free"`.
+- `flora_get_descriptions()` now reads the text of each FFB page directly in a headless Chrome browser (via 'chromote') instead of from a PDF of it. The PDF clipped the right end of every line, silently losing words in both the controlled and the free descriptions (e.g. "leaflet margin commonly denticulate" was read as "leaflet denticulate"). It is also much faster: one browser session is reused for all taxa.
+- `flora_get_descriptions()` no longer fails with "Error in i0:i1 : argument of length 0" when a description's closing section header is not found (e.g. when the description ran onto the next PDF page); that taxon is recorded as a failure instead. Language tag lines ("EN"/"PT") and non-breaking spaces no longer leak into the extracted text.
 - `library(floraR)` no longer prints "Registered S3 method overwritten by 'hoardr'" when `httr` is already loaded. The `finch` package is now loaded quietly only when `flora_parse()` needs it.
 
 # floraR 1.0.0

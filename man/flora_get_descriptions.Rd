@@ -12,8 +12,8 @@ least the columns \code{genus}, \code{specificEpithet}, and
 \code{references}. Each row is treated as one taxon page to download and
 parse.}
 
-\item{delay}{Numeric. Delay in seconds passed to \code{webshot2::webshot()} to
-allow the page to load before the PDF is captured. Default is \code{10}.}
+\item{delay}{Numeric. Seconds to wait after each page has loaded before its
+text is read, to let the page finish rendering. Default is \code{10}.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints informative progress messages
 during parsing. If \code{FALSE}, runs quietly.}
@@ -30,8 +30,8 @@ A named list with two elements:
 }
 }
 \description{
-Downloads printable PDF versions of Flora e Funga do Brasil (FFB) taxon pages
-for a set of species and extracts text from the description sections. The
+Reads the printable versions of Flora e Funga do Brasil (FFB) taxon pages for
+a set of species and extracts the text of their description sections. The
 function attempts to recover two kinds of descriptions from each page:
 controlled descriptions ("Descricao com campos controlados") and free
 descriptions ("Descricao livre").
@@ -40,8 +40,8 @@ descriptions ("Descricao livre").
 For each taxon, the function:
 \enumerate{
   \item builds a printable page URL from the \code{references} column;
-  \item saves the page temporarily as \code{temp.pdf};
-  \item extracts text with \pkg{pdftools};
+  \item loads the page in a headless Chrome browser (via \pkg{chromote}) and
+    reads its text;
   \item searches for the controlled-description section;
   \item searches for the free-description section;
   \item stores extracted text in named lists using the scientific name.
@@ -61,11 +61,16 @@ section headers in Portuguese and/or English, such as:
   \item \code{"Bibliografia Referencia|Reference"}
 }
 
-Text is extracted from every page of the PDF, so a description that runs
-onto a following page is read in full. Each section ends at the next section
-header found at the start of a line; if no closing header is found, the taxon
-is recorded as a failure rather than stopping the whole run. Temporary output
-is always written to a file named \code{temp.pdf} in the working directory.
+The text is read directly from the rendered page rather than from a PDF of it,
+so no line can be cut off at a page margin (a PDF of the page clipped the
+right end of every line, silently losing words), and a description is read in
+full however long it is. Each section ends at the next section header found
+at the start of a line; if no closing header is found, the taxon is recorded
+as a failure rather than stopping the whole run. The language tag lines
+("EN"/"PT") are dropped.
+
+A Chrome or Chromium browser must be installed, as for \pkg{chromote}; one
+browser session is opened for the whole run and closed at the end.
 }
 \examples{
 \dontrun{

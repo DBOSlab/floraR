@@ -11,6 +11,7 @@ export(flora_records)
 export(flora_search)
 export(flora_species_gap)
 export(flora_version)
+importFrom(chromote,ChromoteSession)
 importFrom(dplyr,
   arrange,
   bind_rows,
@@ -27,7 +28,6 @@ importFrom(dplyr,
 importFrom(jsonlite,fromJSON)
 importFrom(magrittr,"%>%")
 importFrom(openxlsx,write.xlsx)
-importFrom(pdftools,pdf_text)
 importFrom(purrr,pmap_chr)
 importFrom(rlang,.data)
 importFrom(stats,na.omit)
@@ -47,4 +47,3 @@ importFrom(utils,
   unzip,
   write.csv
 )
-importFrom(webshot2,webshot)
