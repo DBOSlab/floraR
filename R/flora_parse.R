@@ -98,7 +98,6 @@
 #' @importFrom dplyr mutate select relocate filter rename tibble
 #' @importFrom tidyr unnest
 #' @importFrom stringr str_match
-#' @importFrom finch dwca_read
 #' @importFrom purrr pmap_chr
 #' @importFrom magrittr "%>%"
 #'

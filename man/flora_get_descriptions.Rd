@@ -12,7 +12,7 @@ least the columns \code{genus}, \code{specificEpithet}, and
 \code{references}. Each row is treated as one taxon page to download and
 parse.}
 
-\item{delay}{Numeric. Delay in seconds passed to \code{webshot::webshot()} to
+\item{delay}{Numeric. Delay in seconds passed to \code{webshot2::webshot()} to
 allow the page to load before the PDF is captured. Default is \code{10}.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints informative progress messages
@@ -61,8 +61,11 @@ section headers in Portuguese and/or English, such as:
   \item \code{"Bibliografia Referencia|Reference"}
 }
 
-Text is extracted from the first PDF page only. Temporary output is always
-written to a file named \code{temp.pdf} in the working directory.
+Text is extracted from every page of the PDF, so a description that runs
+onto a following page is read in full. Each section ends at the next section
+header found at the start of a line; if no closing header is found, the taxon
+is recorded as a failure rather than stopping the whole run. Temporary output
+is always written to a file named \code{temp.pdf} in the working directory.
 }
 \examples{
 \dontrun{

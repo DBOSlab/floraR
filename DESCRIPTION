@@ -44,7 +44,7 @@ Imports:
     magrittr,
     dplyr,
     purrr,
-    webshot,
+    webshot2,
     pdftools,
     tibble,
     rlang,

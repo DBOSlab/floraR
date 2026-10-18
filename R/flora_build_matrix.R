@@ -44,7 +44,7 @@
 #'
 #' @export
 
-flora_build_matrix <- function(descriptions=NULL) {
+flora_build_matrix <- function(descriptions = NULL) {
 
   if (length(descriptions) == 2) {
     descriptions[[1]] -> x
@@ -59,6 +59,8 @@ flora_build_matrix <- function(descriptions=NULL) {
     #length(descriptions)
     .buildMatrix(descriptions) -> mat
   }
+
+  mat[, dim(mat)[2]] <- gsub("[.]$", "", mat[, dim(mat)[2]])
 
   return(mat)
 }

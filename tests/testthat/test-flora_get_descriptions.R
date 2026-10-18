@@ -10,26 +10,34 @@
   ), collapse = "\n")
 }
 
-.mock_success_webshot <- function(env = parent.frame()) {
+# 'pages' is what pdftools::pdf_text() returns: one string per PDF page
+.mock_success_webshot <- function(pages = .flora_descriptions_page_text(),
+                                  env = parent.frame()) {
   testthat::local_mocked_bindings(
     webshot = function(url, file, delay, useragent) {
       writeLines("mock pdf placeholder", file)
       invisible(file)
     },
-    .package = "webshot",
+    .package = "webshot2",
     .env = env
   )
   testthat::local_mocked_bindings(
-    pdf_text = function(pdf) list(.flora_descriptions_page_text()),
+    pdf_text = function(pdf) pages,
     .package = "pdftools",
     .env = env
   )
 }
 
+.one_taxon <- function() {
+  data.frame(genus = "Inga", specificEpithet = "edulis",
+             references = "https://floradobrasil.jbrj.gov.br/consulta/ficha.html?id=1",
+             stringsAsFactors = FALSE)
+}
+
 .mock_failing_webshot <- function(env = parent.frame()) {
   testthat::local_mocked_bindings(
     webshot = function(url, file, delay, useragent) invisible(NULL),  # never creates the file
-    .package = "webshot",
+    .package = "webshot2",
     .env = env
   )
 }
@@ -101,4 +109,53 @@ test_that("flora_get_descriptions prints a progress message per taxon when verbo
   )
 
   expect_message(flora_get_descriptions(taxa, delay = 0, verbose = TRUE), "Extracted 1/1")
+})
+
+
+test_that("flora_get_descriptions reads a description that continues onto the next PDF page", {
+  # Regression: the free description ends on page 1 and its closing header
+  # ("Commentaries") is the first line of page 2. Reading page 1 only left no
+  # closing header and failed with "Error in i0:i1 : argument of length 0".
+  .mock_success_webshot(pages = c(
+    paste("Description with controlled fields", "Leaf: leaflets 3 to 7.",
+          "Free description", "EN", "Shrub 1.5 m; leaves 5.5-20 cm long.",
+          "Seeds 19-25 mm long.", sep = "\n"),
+    paste("Commentaries", "EN", "Endemic to Bahia.", "Vouchers", "Cardoso 123", sep = "\n")
+  ))
+
+  result <- flora_get_descriptions(.one_taxon(), delay = 0, verbose = FALSE)
+
+  expect_equal(result$descriptions_controlled[["Inga edulis"]], "Leaf: leaflets 3 to 7.")
+  expect_equal(result$descriptions_free[["Inga edulis"]],
+               "Shrub 1.5 m; leaves 5.5-20 cm long. Seeds 19-25 mm long.")
+})
+
+
+test_that("flora_get_descriptions drops the EN/PT language tag lines", {
+  .mock_success_webshot(pages = paste(
+    "Free description", "", "EN", "", "A tree.", "Commentaries", sep = "\n"))
+
+  result <- flora_get_descriptions(.one_taxon(), delay = 0, verbose = FALSE)
+  expect_equal(result$descriptions_free[["Inga edulis"]], "A tree.")
+})
+
+
+test_that("flora_get_descriptions does not end a section at a header word inside the text", {
+  .mock_success_webshot(pages = paste(
+    "Free description", "Shrub; Origin of the epithet unclear, see Vouchers below.",
+    "Leaves simple.", "Commentaries", sep = "\n"))
+
+  result <- flora_get_descriptions(.one_taxon(), delay = 0, verbose = FALSE)
+  expect_equal(result$descriptions_free[["Inga edulis"]],
+               "Shrub; Origin of the epithet unclear, see Vouchers below. Leaves simple.")
+})
+
+
+test_that("flora_get_descriptions records a failure, not an error, when a section never ends", {
+  .mock_success_webshot(pages = paste("Free description", "A tree with no closing header.",
+                                      sep = "\n"))
+
+  expect_no_error(result <- flora_get_descriptions(.one_taxon(), delay = 0, verbose = FALSE))
+  expect_equal(result$descriptions_free[[2]], "Inga edulis")
+  expect_equal(result$descriptions_controlled[[2]], "Inga edulis")
 })

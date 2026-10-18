@@ -147,3 +147,11 @@ test_that("flora_parse names the returned list by the dwca folder", {
 
   unlink(path, recursive = TRUE)
 })
+
+
+test_that("floraR does not import finch, so attaching it does not load hoardr", {
+  # Importing finch loads hoardr at library(floraR), whose print.cache_info
+  # method overrides httr's and prints "Registered S3 method overwritten by
+  # 'hoardr'". flora_parse() loads finch quietly only when it is needed.
+  expect_false("finch" %in% names(getNamespaceImports("floraR")))
+})
