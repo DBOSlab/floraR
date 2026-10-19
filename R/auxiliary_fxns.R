@@ -1235,16 +1235,16 @@
 
 
 #_______________________________________________________________________________
-# FFB's officially listed states for a taxon, from the parsed FFB taxon and
-# distribution tables. For a genus, the states of all its species and
+# FFB's officially listed states and phytogeographic domains for a taxon,
+# from the parsed FFB taxon and distribution tables. For a genus, the states of all its species and
 # infraspecific taxa are combined (FFB does not list a distribution for the
 # genus itself); for a species, those of the species and its infraspecific
 # taxa. A synonym is replaced by its accepted name first. Returns
-# list(found, name, states). ####
+# list(found, name, states, domains), domains named as in .br_domain_names. ####
 .ffb_taxon_states <- function(taxon, taxon_df, distribution_df) {
   rows <- which(taxon_df$taxonName %in% taxon)
   if (length(rows) == 0) {
-    return(list(found = FALSE, name = taxon, states = character(0)))
+    return(list(found = FALSE, name = taxon, states = character(0), domains = character(0)))
   }
   row <- rows[1]
   name <- taxon
@@ -1265,7 +1265,89 @@
   loc <- gsub("^BR-", "", distribution_df$locationID[distribution_df$id %in% ids])
   loc <- loc[!is.na(loc) & nzchar(loc)]
   states <- .normalize_br_state(loc)
-  list(found = TRUE, name = name, states = sort(unique(states[!is.na(states)])))
+  dom <- distribution_df$phytogeographicDomain[distribution_df$id %in% ids]
+  domains <- .br_domain_names[match(.ffb_key(dom), .ffb_key(.br_domain_names))]
+  list(found = TRUE, name = name, states = sort(unique(states[!is.na(states)])),
+       domains = sort(unique(domains[!is.na(domains)])))
+}
+
+
+#_______________________________________________________________________________
+# The six Brazilian phytogeographic domains, as named by FFB and by IBGE's
+# biome map bundled in inst/extdata/br_domains.rds ####
+.br_domain_names <- c("Amaz\u00f4nia", "Caatinga", "Cerrado", "Mata Atl\u00e2ntica", "Pampa",
+                      "Pantanal")
+
+
+#_______________________________________________________________________________
+# Georeferenced Brazilian GBIF records of a taxon (with its synonyms and
+# infraspecific taxa), excluding records GBIF flags with geospatial issues
+# (e.g. zero coordinates, or coordinates outside the stated country). Read
+# 300 at a time, up to 'max_records'. Returns one row per record; never
+# errors - returns what could be retrieved. ####
+.gbif_brazil_coordinates <- function(taxon_key, max_records = 5000) {
+  val <- function(x) if (is.null(x) || length(x) == 0) NA_character_ else as.character(x)
+  num <- function(x) if (is.null(x) || length(x) == 0) NA_real_ else as.numeric(x)
+  rows <- list()
+  offset <- 0
+  repeat {
+    res <- .get_json(sprintf(paste0("https://api.gbif.org/v1/occurrence/search?taxonKey=%s",
+                                    "&country=BR&hasCoordinate=true&hasGeospatialIssue=false",
+                                    "&limit=300&offset=%d"), taxon_key, offset))
+    if (is.null(res) || length(res$results) == 0) break
+    rows <- c(rows, lapply(res$results, function(r) {
+      data.frame(Latitude = num(r$decimalLatitude), Longitude = num(r$decimalLongitude),
+                 StateProvince = val(r$stateProvince), Municipality = val(r$municipality),
+                 Locality = val(r$locality), RecordedBy = val(r$recordedBy),
+                 RecordNumber = val(r$recordNumber), EventDate = val(r$eventDate),
+                 Institution = if (is.null(r$institutionCode)) val(r$collectionCode) else val(r$institutionCode),
+                 CatalogNumber = val(r$catalogNumber), Identified_as = val(r$scientificName),
+                 RecordLink = paste0("https://www.gbif.org/occurrence/", val(r$key)),
+                 stringsAsFactors = FALSE)
+    }))
+    offset <- offset + 300
+    if (isTRUE(res$endOfRecords) || offset >= max_records) break
+  }
+  if (length(rows) == 0) {
+    return(data.frame(Latitude = numeric(0), Longitude = numeric(0),
+                      StateProvince = character(0), Municipality = character(0),
+                      Locality = character(0), RecordedBy = character(0),
+                      RecordNumber = character(0), EventDate = character(0),
+                      Institution = character(0), CatalogNumber = character(0),
+                      Identified_as = character(0), RecordLink = character(0),
+                      stringsAsFactors = FALSE))
+  }
+  do.call(rbind, rows)
+}
+
+
+#_______________________________________________________________________________
+# The phytogeographic domain each coordinate falls in, from IBGE's biome map
+# (2019, simplified to 1 km) bundled in inst/extdata/br_domains.rds; NA for
+# coordinates outside the six domains (e.g. offshore or abroad). Requires the
+# 'sf' package: returns NULL without it. ####
+.assign_br_domain <- function(longitude, latitude) {
+  if (!requireNamespace("sf", quietly = TRUE)) return(NULL)
+  if (length(longitude) == 0) return(character(0))
+  domains <- .br_domains_map()
+  old <- suppressMessages(sf::sf_use_s2(FALSE))
+  on.exit(suppressMessages(sf::sf_use_s2(old)), add = TRUE)
+  out <- rep(NA_character_, length(longitude))
+  ok <- !is.na(longitude) & !is.na(latitude)
+  if (any(ok)) {
+    pts <- sf::st_as_sf(data.frame(x = longitude[ok], y = latitude[ok]),
+                        coords = c("x", "y"), crs = 4674)
+    hit <- suppressMessages(sf::st_intersects(pts, domains))
+    out[ok] <- vapply(hit, function(i) if (length(i) == 0) NA_character_ else domains$domain[i[1]],
+                      character(1))
+  }
+  out
+}
+
+.br_domains_map <- function() {
+  path <- system.file("extdata", "br_domains.rds", package = "floraR")
+  if (!nzchar(path)) stop("The bundled domain map (br_domains.rds) was not found.", call. = FALSE)
+  readRDS(path)
 }
 
 
@@ -1315,7 +1397,8 @@
     )
     TRUE
   }, error = function(e) {
-    if (verbose) message("  HTML report rendering failed: ", conditionMessage(e))
+    # Always warn: with verbose = FALSE a failed render would otherwise go unnoticed
+    warning("The HTML report could not be rendered: ", conditionMessage(e), call. = FALSE)
     FALSE
   })
 

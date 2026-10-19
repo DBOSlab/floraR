@@ -21,6 +21,7 @@
     phytogeographicDomain = c("Caatinga", "Mata Atlantica", "Caatinga", "Cerrado",
                               "Amazonia", "Amazonia"),
     endemism = c("true", "true", "true", "false", "false", "false"),
+    establishmentMeans = c("Nativa", "Nativa", "Nativa", "Ex\u00f3tica", "Nativa", "Ex\u00f3tica"),
     stringsAsFactors = FALSE
   )
   speciesprofile_df <- data.frame(
@@ -120,6 +121,127 @@ test_that("flora_records filters by endemism", {
 })
 
 
+test_that("flora_records with endemism = TRUE and a state returns the endemics exclusive to it", {
+  # Regression: endemism = TRUE with a state used to return every Brazilian
+  # endemic that merely occurs in the state (Inga edulis occurs in BA and MG)
+  .mock_flora_records(.flora_records_fixture())
+
+  bahia_endemics <- flora_records(state = "Bahia", endemism = TRUE, verbose = FALSE)
+  expect_equal(bahia_endemics$taxonName, "Inga vera")
+})
+
+
+test_that("flora_records with endemism = 'Brazil' returns the Brazilian endemics occurring in the areas", {
+  .mock_flora_records(.flora_records_fixture())
+
+  in_bahia <- flora_records(state = "Bahia", endemism = "Brazil", verbose = FALSE)
+  expect_setequal(in_bahia$taxonName, c("Inga edulis", "Inga vera"))
+  # Without an area, "Brazil" is the same as TRUE
+  expect_setequal(flora_records(endemism = "Brazil", verbose = FALSE)$taxonName,
+                  flora_records(endemism = TRUE, verbose = FALSE)$taxonName)
+})
+
+
+test_that("flora_records with endemism = FALSE and a state returns the taxa not exclusive to it", {
+  .mock_flora_records(.flora_records_fixture())
+
+  not_exclusive <- flora_records(state = "Bahia", endemism = FALSE, verbose = FALSE)
+  expect_equal(not_exclusive$taxonName, "Inga edulis")
+  # TRUE and FALSE partition the taxa occurring in the area
+  expect_setequal(c(not_exclusive$taxonName,
+                    flora_records(state = "Bahia", endemism = TRUE, verbose = FALSE)$taxonName),
+                  flora_records(state = "Bahia", verbose = FALSE)$taxonName)
+})
+
+
+test_that("flora_records treats several states as one area for exclusive endemism", {
+  .mock_flora_records(.flora_records_fixture())
+
+  ba_mg <- flora_records(state = c("BA", "Minas Gerais"), endemism = TRUE, verbose = FALSE)
+  expect_setequal(ba_mg$taxonName, c("Inga edulis", "Inga vera"))
+})
+
+
+test_that("flora_records applies exclusive endemism to domains and vegetation types", {
+  .mock_flora_records(.flora_records_fixture())
+
+  # Inga edulis is also in the Mata Atlantica, so it is not a Caatinga endemic
+  caatinga <- flora_records(phytogeographicDomain = "Caatinga", endemism = TRUE, verbose = FALSE)
+  expect_equal(caatinga$taxonName, "Inga vera")
+
+  veg <- flora_records(vegetationType = "Caatinga (stricto sensu)", endemism = TRUE, verbose = FALSE)
+  expect_setequal(veg$taxonName, c("Inga edulis", "Inga vera"))
+})
+
+
+test_that("flora_records requires exclusivity to every area filter combined", {
+  .mock_flora_records(.flora_records_fixture())
+
+  ba_caatinga <- flora_records(state = "Bahia", phytogeographicDomain = "Caatinga",
+                               endemism = TRUE, verbose = FALSE)
+  expect_equal(ba_caatinga$taxonName, "Inga vera")
+
+  # Inga edulis is restricted to BA + MG, but not to the Caatinga
+  ba_mg_caatinga <- flora_records(state = c("BA", "MG"), phytogeographicDomain = "Caatinga",
+                                  endemism = TRUE, verbose = FALSE)
+  expect_equal(ba_mg_caatinga$taxonName, "Inga vera")
+})
+
+
+test_that("flora_records excludes taxa with no record for an area from its exclusive endemics", {
+  fixture <- .flora_records_fixture()
+  # A Bahia-only endemic whose state is not recorded cannot be shown to be exclusive
+  fixture$distribution_df$locationID[fixture$distribution_df$id == "2"] <- NA
+  .mock_flora_records(fixture)
+
+  expect_equal(nrow(flora_records(state = "Bahia", endemism = TRUE, verbose = FALSE)), 0)
+})
+
+
+test_that("flora_records matches area and trait values regardless of accents and case", {
+  .mock_flora_records(.flora_records_fixture())
+
+  expect_equal(flora_records(phytogeographicDomain = "Mata Atl\u00e2ntica", verbose = FALSE)$taxonName,
+               "Inga edulis")
+  expect_equal(flora_records(lifeForm = "\u00c1RVORE", verbose = FALSE)$taxonName, "Inga vera")
+})
+
+
+test_that("flora_records rejects an invalid endemism value", {
+  .mock_flora_records(.flora_records_fixture())
+  expect_error(flora_records(endemism = "yes", verbose = FALSE),
+               "must be TRUE, FALSE, \"Brazil\", or NULL")
+})
+
+
+test_that("flora_records filters by establishmentMeans (origin), in English or Portuguese", {
+  .mock_flora_records(.flora_records_fixture())
+
+  introduced <- flora_records(establishmentMeans = "introduced", verbose = FALSE)
+  expect_setequal(introduced$taxonName, c("Mimosa pudica", "Aster beta"))
+  expect_setequal(flora_records(establishmentMeans = "Ex\u00f3tica", verbose = FALSE)$taxonName,
+                  introduced$taxonName)
+
+  native <- flora_records(establishmentMeans = "NATIVA", verbose = FALSE)
+  expect_setequal(native$taxonName, c("Inga edulis", "Inga vera", "Aster alba"))
+  expect_equal(nrow(flora_records(establishmentMeans = c("native", "introduced"), verbose = FALSE)), 5)
+})
+
+
+test_that("flora_records combines establishmentMeans with the other filters", {
+  .mock_flora_records(.flora_records_fixture())
+  expect_equal(nrow(flora_records(state = "Bahia", establishmentMeans = "introduced", verbose = FALSE)), 0)
+  expect_equal(flora_records(state = "Bahia", establishmentMeans = "native", endemism = TRUE,
+                             verbose = FALSE)$taxonName, "Inga vera")
+})
+
+
+test_that("flora_records rejects an unrecognised establishmentMeans", {
+  .mock_flora_records(.flora_records_fixture())
+  expect_error(flora_records(establishmentMeans = "cultivated", verbose = FALSE), "Unrecognised 'establishmentMeans'")
+})
+
+
 test_that("flora_records filters by lifeForm, habitat, and vegetationType", {
   fixture <- .flora_records_fixture()
   .mock_flora_records(fixture)
@@ -195,4 +317,44 @@ test_that(".flora_prepare_records extracts taxon/distribution/speciesprofile tab
   expect_equal(result$taxon_df$taxonName, "Inga edulis")
   expect_equal(result$distribution_df$locationID, "BR-BA")
   expect_equal(result$speciesprofile_df$lifeForm, "Arbusto")
+})
+
+
+test_that("flora_records adds the distribution and species profile, joined with ' | '", {
+  fixture <- .flora_records_fixture()
+  .mock_flora_records(fixture)
+
+  result <- flora_records(verbose = FALSE)
+  expect_true(all(c("state", "phytogeographicDomain", "endemism", "establishmentMeans",
+                    "lifeForm", "habitat", "vegetationType") %in% names(result)))
+
+  edulis <- result[result$taxonName == "Inga edulis", ]
+  expect_equal(edulis$state, "BA | MG")
+  expect_equal(edulis$phytogeographicDomain, "Caatinga | Mata Atlantica")
+  expect_equal(edulis$endemism, "true")          # repeated values appear once
+  expect_equal(edulis$establishmentMeans, "Nativa")
+  expect_equal(edulis$lifeForm, "Arbusto")
+  expect_equal(edulis$vegetationType, "Caatinga (stricto sensu)")
+
+  # A taxon without distribution or profile rows gets NA
+  synonym <- result[result$taxonName == "Inga synonym", ]
+  expect_true(is.na(synonym$state))
+  expect_true(is.na(synonym$lifeForm))
+})
+
+
+test_that("flora_records keeps the taxon's full distribution after an area filter", {
+  fixture <- .flora_records_fixture()
+  .mock_flora_records(fixture)
+
+  result <- flora_records(state = "Minas Gerais", verbose = FALSE)
+  expect_equal(result$taxonName, "Inga edulis")
+  expect_equal(result$state, "BA | MG")
+})
+
+
+test_that(".collapse_by_id sorts values ignoring accents and drops empty ones", {
+  out <- .collapse_by_id(id = c(1, 1, 1, 2, 2), value = c("Árvore", "Erva", "", NA, " "),
+                         ids = c(2, 1, 3))
+  expect_equal(out, c(NA, "Árvore | Erva", NA))
 })

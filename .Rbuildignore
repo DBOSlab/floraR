@@ -10,3 +10,4 @@
 ^cran-comments\.md$
 ^flora_download$
 ^temp\.pdf$
+^data-raw$

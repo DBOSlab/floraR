@@ -56,7 +56,9 @@ Suggests:
     DT,
     htmltools,
     rWCVPdata,
-    refloraR
+    refloraR,
+    sf,
+    leaflet
 Remotes:
     DBOSlab/refloraR
 Additional_repositories: https://matildabrown.github.io/drat

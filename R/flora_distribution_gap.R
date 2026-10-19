@@ -8,7 +8,9 @@
 #' listed in its official Flora e Funga do Brasil (FFB) distribution. This flags
 #' candidate new state records for a taxonomist to verify - e.g. a species listed by FFB
 #' only for Bahia, but with herbarium specimens from Pernambuco - so that the
-#' distributions in FFB monographs can be kept complete.
+#' distributions in FFB monographs can be kept complete. Georeferenced records are also
+#' placed in the six Brazilian phytogeographic domains, to flag candidate new domain
+#' records in the same way.
 #'
 #' @details
 #' \strong{FFB side.} The officially listed states come from the parsed FFB taxon and
@@ -36,6 +38,19 @@
 #' \code{"Paraiba"}) are normalised to FFB state names before comparison; values that are
 #' not Brazilian states are ignored.
 #'
+#' \strong{Phytogeographic domains.} With \code{domains = TRUE} (default), the GBIF
+#' records that have coordinates - excluding those GBIF flags with geospatial issues,
+#' such as zero coordinates or coordinates outside the stated country - are placed in
+#' the six Brazilian phytogeographic domains (Amazonia, Caatinga, Cerrado, Mata
+#' Atlantica, Pampa, Pantanal) using IBGE's biome map (2019) bundled with floraR,
+#' simplified to a 1 km tolerance. A domain with records but not listed for the taxon
+#' in FFB is a candidate new domain record. Up to \code{max_coordinates} records are
+#' read (300 per request); REFLORA specimens with coordinates are added when
+#' \code{"reflora"} is among \code{sources}. Records that fall outside the six domains
+#' (e.g. just offshore) are kept, with \code{Domain = NA}, but never flagged. This
+#' analysis requires the \pkg{sf} package, and the map in the HTML report the
+#' \pkg{leaflet} package; without them, they are skipped with a message.
+#'
 #' Occurrence records are evidence to review, not proof: a record in a new state may be
 #' a cultivated plant, a misidentification, or a georeferencing error, which is why the
 #' HTML report lists the individual records behind each candidate state.
@@ -46,6 +61,8 @@
 #'   state = NULL,
 #'   sources = "gbif",
 #'   specieslink_key = Sys.getenv("SPECIESLINK_KEY"),
+#'   domains = TRUE,
+#'   max_coordinates = 5000,
 #'   version = "latest",
 #'   verbose = TRUE,
 #'   save = TRUE,
@@ -70,6 +87,13 @@
 #'   \code{"speciesLink"} is among \code{sources}. Defaults to the
 #'   \code{SPECIESLINK_KEY} environment variable.
 #'
+#' @param domains Logical. If \code{TRUE} (default), also place the georeferenced
+#'   records in the Brazilian phytogeographic domains and flag candidate new domain
+#'   records (see Details). Requires the \pkg{sf} package.
+#'
+#' @param max_coordinates Numeric. Maximum number of georeferenced GBIF records read
+#'   for the domain analysis. Defaults to \code{5000}.
+#'
 #' @param version Character. FFB dataset version to compare against. Defaults to
 #'   \code{"latest"}. Passed to \code{\link{flora_download}}.
 #'
@@ -86,7 +110,9 @@
 #'
 #' @param html_report Logical. If \code{TRUE} (default), also writes a self-contained
 #'   HTML report (\code{<dir>/<filename>.html}) summarizing the results: KPI counts, an
-#'   evidence-by-source breakdown, the full state-by-state table, and the individual
+#'   evidence-by-source breakdown, the full state-by-state table, the domain table, an
+#'   interactive map of the georeferenced records over the phytogeographic domains
+#'   (coloured by candidate status), the records in candidate domains, and the individual
 #'   occurrence records found in the new-state-record candidate states - each linking to
 #'   the record in its source database - all as sortable, filterable \pkg{DT} widgets with
 #'   buttons to copy or download them as CSV/Excel. Requires the \pkg{rmarkdown},
@@ -96,22 +122,27 @@
 #' @param open_report Logical. If \code{TRUE} (default in interactive sessions), opens
 #'   the HTML report in the browser once rendered.
 #'
-#' @return A \code{data.frame}, one row per Brazilian state with any evidence for
-#'   \code{taxon} (in FFB or in the queried sources), with columns:
+#' @return A list of three \code{data.frame}s:
 #' \describe{
-#'   \item{Taxon}{The queried taxon name.}
-#'   \item{State}{Brazilian state name.}
-#'   \item{In_FFB_distribution}{Logical; whether FFB already lists this state for the taxon.}
-#'   \item{GBIF_records}{Number of GBIF occurrence records in this state (when
-#'     \code{"gbif"} is among \code{sources}).}
-#'   \item{Reflora_records}{Number of Reflora specimens in this state (when
-#'     \code{"reflora"} is among \code{sources} and \pkg{refloraR} is installed).}
-#'   \item{speciesLink_records}{Number of speciesLink records in this state (when
-#'     \code{"speciesLink"} is among \code{sources} and a key is given).}
-#'   \item{New_state_record_candidate}{\code{TRUE} when the state has evidence from at
-#'     least one source but is \emph{not} in FFB's distribution - a candidate for
-#'     taxonomic review.}
+#'   \item{\code{states}}{One row per Brazilian state with any evidence for
+#'     \code{taxon} (in FFB or in the queried sources): \code{Taxon}, \code{State},
+#'     \code{In_FFB_distribution} (whether FFB already lists the state),
+#'     \code{GBIF_records}, \code{Reflora_records}, and \code{speciesLink_records}
+#'     (records in the state, for each source queried), and
+#'     \code{New_state_record_candidate} (\code{TRUE} when the state has evidence from
+#'     at least one source but is not in FFB's distribution).}
+#'   \item{\code{domains}}{One row per phytogeographic domain with evidence (in FFB or
+#'     among the georeferenced records): \code{Taxon}, \code{Domain},
+#'     \code{In_FFB_distribution}, \code{Georeferenced_records}, and
+#'     \code{New_domain_record_candidate}. Empty when \code{domains = FALSE}.}
+#'   \item{\code{records}}{One row per georeferenced record, with its coordinates,
+#'     \code{State}, \code{Domain}, collector, date, institution, catalogue number,
+#'     identification, a link to the record, and the logical columns
+#'     \code{New_state_record_candidate} and \code{New_domain_record_candidate}. Empty
+#'     when \code{domains = FALSE}.}
 #' }
+#' With \code{save = TRUE}, each table is saved as a sheet of the \code{.xlsx}
+#' spreadsheet.
 #'
 #' @seealso \code{\link{flora_species_gap}}, \code{\link{flora_records}}
 #'
@@ -127,6 +158,10 @@
 #' gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
 #'                                  state = c("Pernambuco", "Paraiba"))
 #'
+#' # The candidate new phytogeographic domains, and the records behind them
+#' gap$domains
+#' gap$records[gap$records$New_domain_record_candidate, ]
+#'
 #' # Adding REFLORA herbarium specimens (requires refloraR)
 #' gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
 #'                                       sources = c("gbif", "reflora"))
@@ -140,6 +175,8 @@ flora_distribution_gap <- function(taxon,
                                    state = NULL,
                                    sources = "gbif",
                                    specieslink_key = Sys.getenv("SPECIESLINK_KEY"),
+                                   domains = TRUE,
+                                   max_coordinates = 5000,
                                    version = "latest",
                                    verbose = TRUE,
                                    save = TRUE,
@@ -167,6 +204,7 @@ flora_distribution_gap <- function(taxon,
   ffb <- .flora_prepare_records(version = version, verbose = FALSE, rm_flora_database = FALSE)
   ffb_taxon <- .ffb_taxon_states(taxon, ffb$taxon_df, ffb$distribution_df)
   ffb_states <- ffb_taxon$states
+  ffb_domains <- ffb_taxon$domains
 
   if (verbose) {
     if (!ffb_taxon$found) {
@@ -284,7 +322,7 @@ flora_distribution_gap <- function(taxon,
                       New_state_record_candidate = logical(0), stringsAsFactors = FALSE)
   if (length(all_states) == 0) {
     if (verbose) message("\nNo evidence found for '", taxon, "' in the requested states or sources.")
-    return(empty)
+    return(list(states = empty, domains = .empty_domain_table(), records = .empty_coord_records()))
   }
 
   result <- data.frame(Taxon = taxon, State = sort(all_states), stringsAsFactors = FALSE)
@@ -305,14 +343,91 @@ flora_distribution_gap <- function(taxon,
   rownames(result) <- NULL
 
   n_new <- sum(result$New_state_record_candidate)
+
+  # ------------------------------------------------------------------------
+  # 4. Phytogeographic domains, from georeferenced records placed on IBGE's
+  #    biome map
+  # ------------------------------------------------------------------------
+  domain_table <- .empty_domain_table()
+  coord_records <- .empty_coord_records()
+  if (domains) {
+    if (!requireNamespace("sf", quietly = TRUE)) {
+      if (verbose) {
+        message("  Package 'sf' is not installed; skipping the phytogeographic domain ",
+                "analysis. Install it with install.packages('sf') to include it.")
+      }
+    } else {
+      coords <- .empty_coord_records()[, character(0)]
+      if (!is.null(gbif_key)) {
+        if (verbose) message("Placing georeferenced GBIF records in phytogeographic domains...")
+        g <- .gbif_brazil_coordinates(gbif_key$key, max_records = max_coordinates)
+        if (nrow(g) > 0) coords <- cbind(data.frame(Source = "GBIF", stringsAsFactors = FALSE), g)
+      }
+      if (!is.null(reflora_result) && nrow(reflora_result) > 0 &&
+          all(c("decimalLatitude", "decimalLongitude") %in% names(reflora_result))) {
+        rc <- reflora_result
+        col <- function(nm) if (nm %in% names(rc)) as.character(rc[[nm]]) else NA_character_
+        reflora_coords <- data.frame(
+          Source = "REFLORA",
+          Latitude = suppressWarnings(as.numeric(rc$decimalLatitude)),
+          Longitude = suppressWarnings(as.numeric(rc$decimalLongitude)),
+          StateProvince = col("stateProvince"), Municipality = col("municipality"),
+          Locality = col("locality"), RecordedBy = col("recordedBy"),
+          RecordNumber = col("recordNumber"), EventDate = col("year"),
+          Institution = col("herbarium"), CatalogNumber = col("catalogNumber"),
+          Identified_as = col("scientificName"), RecordLink = col("bibliographicCitation"),
+          stringsAsFactors = FALSE)
+        reflora_coords <- reflora_coords[!is.na(reflora_coords$Latitude) &
+                                           !is.na(reflora_coords$Longitude), ]
+        coords <- if (ncol(coords) == 0) reflora_coords else rbind(coords, reflora_coords)
+      }
+
+      if (ncol(coords) > 0 && nrow(coords) > 0) {
+        coords$State <- .normalize_br_state(coords$StateProvince)
+        coords$Domain <- .assign_br_domain(coords$Longitude, coords$Latitude)
+        coords$StateProvince <- NULL
+        if (!is.null(state)) coords <- coords[coords$State %in% all_states, ]
+        coords$New_state_record_candidate <- !is.na(coords$State) & !coords$State %in% ffb_states
+        coords$New_domain_record_candidate <- !is.na(coords$Domain) & !coords$Domain %in% ffb_domains
+        coord_records <- cbind(data.frame(Taxon = rep(taxon, nrow(coords)), stringsAsFactors = FALSE),
+                               coords[, setdiff(names(.empty_coord_records()), "Taxon")])
+        rownames(coord_records) <- NULL
+      }
+
+      in_records <- coord_records$Domain[!is.na(coord_records$Domain)]
+      all_domains <- .br_domain_names[.br_domain_names %in% c(ffb_domains, in_records)]
+      if (length(all_domains) > 0) {
+        n_rec <- table(factor(in_records, levels = .br_domain_names))
+        domain_table <- data.frame(
+          Taxon = taxon, Domain = all_domains,
+          In_FFB_distribution = all_domains %in% ffb_domains,
+          Georeferenced_records = as.integer(n_rec[all_domains]),
+          stringsAsFactors = FALSE)
+        domain_table$New_domain_record_candidate <- !domain_table$In_FFB_distribution &
+          domain_table$Georeferenced_records > 0
+      }
+      if (verbose) {
+        message(sprintf("  %d georeferenced record(s); %d of them in a domain not listed by FFB.",
+                        nrow(coord_records), sum(coord_records$New_domain_record_candidate)))
+      }
+    }
+  }
+
+  n_new_domains <- sum(domain_table$New_domain_record_candidate)
   if (verbose) {
     message(sprintf("\n\u2713 %d state(s) with evidence for '%s', %d not yet in FFB's distribution",
                     nrow(result), taxon, n_new))
+    if (domains && nrow(domain_table) > 0) {
+      message(sprintf("\u2713 %d phytogeographic domain(s) with evidence, %d not yet in FFB's distribution",
+                      nrow(domain_table), n_new_domains))
+    }
   }
+
+  out <- list(states = result, domains = domain_table, records = coord_records)
 
   if (save) {
     dir <- .arg_check_dir(dir)
-    .save_xlsx(result, verbose = verbose, filename = filename, dir = dir)
+    .save_xlsx(out, verbose = verbose, filename = filename, dir = dir)
   }
 
   if (html_report) {
@@ -376,7 +491,13 @@ flora_distribution_gap <- function(taxon,
       n_new_candidates = n_new,
       source_summary = source_summary,
       result = result,
-      records_detail = records_detail
+      records_detail = records_detail,
+      domains_run = domains && requireNamespace("sf", quietly = TRUE),
+      ffb_domains = ffb_domains,
+      domain_table = domain_table,
+      n_new_domains = n_new_domains,
+      coord_records = coord_records,
+      max_coordinates = max_coordinates
     )
 
     dir <- .arg_check_dir(dir)
@@ -389,5 +510,23 @@ flora_distribution_gap <- function(taxon,
                          open_report = open_report)
   }
 
-  return(result)
+  return(out)
+}
+
+
+# Empty result tables, with the columns flora_distribution_gap() returns
+.empty_domain_table <- function() {
+  data.frame(Taxon = character(0), Domain = character(0), In_FFB_distribution = logical(0),
+             Georeferenced_records = integer(0), New_domain_record_candidate = logical(0),
+             stringsAsFactors = FALSE)
+}
+
+.empty_coord_records <- function() {
+  data.frame(Taxon = character(0), Source = character(0), Latitude = numeric(0),
+             Longitude = numeric(0), State = character(0), Domain = character(0),
+             Municipality = character(0), Locality = character(0), RecordedBy = character(0),
+             RecordNumber = character(0), EventDate = character(0), Institution = character(0),
+             CatalogNumber = character(0), Identified_as = character(0),
+             RecordLink = character(0), New_state_record_candidate = logical(0),
+             New_domain_record_candidate = logical(0), stringsAsFactors = FALSE)
 }

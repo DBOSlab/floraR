@@ -11,6 +11,7 @@ flora_records(
   state = NULL,
   phytogeographicDomain = NULL,
   endemism = NULL,
+  establishmentMeans = NULL,
   lifeForm = NULL,
   habitat = NULL,
   vegetationType = NULL,
@@ -37,16 +38,30 @@ to filter by (e.g. \code{c("Fabaceae", "Luetzelburgia", "Inga edulis")}).
 
 \item{state}{Character vector. Brazilian state(s) - full name or acronym,
 diacritics-insensitive (e.g. \code{"Bahia"} or \code{"BA"}) - to filter by
-occurrence, based on the FFB distribution table. \code{NULL} (default)
-does not filter by state.}
+occurrence, based on the FFB distribution table (or, with \code{endemism =
+TRUE}, by exclusive occurrence; see the Endemism section). \code{NULL}
+(default) does not filter by state.}
 
 \item{phytogeographicDomain}{Character vector. Phytogeographic domain(s) to
 filter by (e.g. \code{"Caatinga"}, \code{"Mata Atlantica"}). \code{NULL}
 (default) does not filter by domain.}
 
-\item{endemism}{Logical. If \code{TRUE}, keeps only taxa flagged as
-Brazilian endemics; if \code{FALSE}, keeps only non-endemics. \code{NULL}
-(default) does not filter by endemism.}
+\item{endemism}{\code{TRUE}, \code{FALSE}, \code{"Brazil"}, or \code{NULL}.
+\code{TRUE} keeps endemics: Brazilian endemics without an area filter, or
+the endemics exclusive to the requested \code{state},
+\code{phytogeographicDomain}, or \code{vegetationType}. \code{"Brazil"}
+keeps Brazilian endemics occurring in those areas. \code{FALSE} keeps the
+complement of \code{TRUE}. \code{NULL} (default) does not filter by
+endemism. See the Endemism section.}
+
+\item{establishmentMeans}{Character vector. The origin of the taxon in Brazil -
+whether it is native to the country or was introduced into it - as recorded
+in FFB's \code{establishmentMeans} field: \code{"native"} (FFB's
+\code{"Nativa"}) or \code{"introduced"} (FFB's \code{"Ex\u00f3tica"}, i.e.
+exotic). English or Portuguese, case- and accent-insensitive:
+\code{"native"}/\code{"nativa"}, \code{"introduced"}/\code{"exotic"}/
+\code{"exotica"}. \code{NULL} (default) does not filter by origin; taxa
+whose origin FFB does not record are only returned then.}
 
 \item{lifeForm, habitat, vegetationType}{Character vectors. Life form (e.g.
 \code{"Arbusto"}, \code{"Arvore"}), habitat (e.g. \code{"Terricola"}), and
@@ -77,7 +92,14 @@ when \code{save = TRUE}. Defaults to \code{"flora_records_search"}.}
 }
 \value{
 A \code{data.frame} of FFB taxon records matching the requested
-  filters, with one row per taxon. If \code{save = TRUE}, the result is also
+  filters, with one row per taxon. Besides the taxon fields, each row carries
+  the taxon's FFB distribution and species profile, the unique values of each
+  field joined in one cell with \code{" | "} (e.g. \code{"BA | MG | PE"}):
+  \code{state} (abbreviations), \code{phytogeographicDomain},
+  \code{endemism}, \code{establishmentMeans}, \code{lifeForm},
+  \code{habitat}, and \code{vegetationType} - always describing the taxon's
+  full record, whatever filters were applied. A field FFB does not record for
+  a taxon is \code{NA}. If \code{save = TRUE}, the result is also
   written to \code{<dir>/<filename>.csv}.
 }
 \description{
@@ -99,15 +121,46 @@ The function downloads (if needed) and parses the FFB dataset exactly like
         names are detected automatically).
   \item \code{taxonRank} and \code{taxonomicStatus} are matched directly
         against the taxon table.
-  \item \code{state}, \code{phytogeographicDomain}, and \code{endemism} are
-        matched against the FFB distribution table (\code{distribution.txt}).
+  \item \code{state}, \code{phytogeographicDomain}, \code{endemism}, and
+        \code{establishmentMeans} are matched against the FFB distribution table
+        (\code{distribution.txt}).
   \item \code{lifeForm}, \code{habitat}, and \code{vegetationType} are matched
         against the FFB species profile table (\code{speciesprofile.txt}).
 }
+Text filters are case- and accent-insensitive (\code{"Mata Atlantica"} matches
+\code{"Mata Atl\u00e2ntica"}, \code{"Arvore"} matches \code{"\u00c1rvore"}).
 All filters are combined with a logical AND. The result always has one row
 per matching taxon (geographic/trait filters restrict \emph{which} taxa are
 returned, they do not multiply rows).
 }
+\section{Endemism}{
+
+FFB's own \code{endemism} flag means \emph{endemic to Brazil}. How
+\code{endemism} is applied therefore depends on whether an area filter -
+\code{state}, \code{phytogeographicDomain}, or \code{vegetationType} - is also
+given:
+\itemize{
+  \item \code{endemism = TRUE} without an area filter returns all Brazilian
+    endemics. \strong{With} an area filter it returns the endemics
+    \emph{exclusive} to those areas: Brazilian endemics whose entire FFB range
+    lies within them. For example, \code{state = "Bahia", endemism = TRUE}
+    returns the taxa found only in Bahia, not every Brazilian endemic that also
+    occurs there. Several values of one filter define one area (\code{state =
+    c("BA", "PE")}: taxa restricted to Bahia and/or Pernambuco), and with
+    several area filters the taxon must be exclusive to each (\code{state =
+    "Bahia", phytogeographicDomain = "Caatinga"}: taxa found only in Bahia and
+    only in the Caatinga). A taxon with no record for an area filter (e.g. no
+    state-level distribution) cannot be shown to be exclusive to it and is not
+    returned.
+  \item \code{endemism = "Brazil"} keeps the Brazilian endemics that
+    \emph{occur} in the requested areas, wherever else in Brazil they also
+    occur (e.g. the Brazilian endemics recorded in Bahia).
+  \item \code{endemism = FALSE} without an area filter returns the taxa not
+    endemic to Brazil; with an area filter, the taxa occurring in those areas
+    that are \emph{not} exclusive to them.
+}
+}
+
 \section{Database caching behavior}{
 
 The FFB dataset is downloaded only once and cached locally in the
@@ -128,10 +181,28 @@ The FFB dataset is downloaded only once and cached locally in the
 fabaceae <- flora_records(taxon = "Fabaceae",
                           taxonomicStatus = "NOME_ACEITO")
 
-# Accepted species endemic to Bahia
+# All accepted species endemic to Brazil
+brazil_endemics <- flora_records(endemism = TRUE,
+                                 taxonomicStatus = "NOME_ACEITO")
+
+# Accepted species endemic to Bahia: found only in Bahia
 bahia_endemics <- flora_records(state = "Bahia",
                                 endemism = TRUE,
                                 taxonomicStatus = "NOME_ACEITO")
+
+# Accepted Brazilian endemics that occur in Bahia (and possibly elsewhere)
+brazil_endemics_in_bahia <- flora_records(state = "Bahia",
+                                          endemism = "Brazil",
+                                          taxonomicStatus = "NOME_ACEITO")
+
+# Species endemic to the Caatinga of Bahia: found only in Bahia, only in the Caatinga
+bahia_caatinga_endemics <- flora_records(state = "Bahia",
+                                         phytogeographicDomain = "Caatinga",
+                                         endemism = TRUE)
+
+# Introduced (exotic) species recorded in Bahia
+bahia_introduced <- flora_records(state = "Bahia",
+                                  establishmentMeans = "introduced")
 
 # Species in the Caatinga with a shrub life form
 caatinga_shrubs <- flora_records(phytogeographicDomain = "Caatinga",
