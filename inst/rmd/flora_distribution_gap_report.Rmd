@@ -212,24 +212,27 @@ if (isTRUE(d$domains_run) && nrow(d$domain_table) > 0) {
 ## Map of Georeferenced Records
 
 ```{r map, out.height = "560px"}
+# Only records within the six domains are mapped
 recs <- d$coord_records
+recs <- recs[!is.na(recs$Domain), , drop = FALSE]
 if (!isTRUE(d$domains_run) || nrow(recs) == 0) {
-  htmltools::p("No georeferenced records to map.", style = "color: #6c757d; font-style: italic;")
+  htmltools::p("No georeferenced records within the phytogeographic domains to map.", style = "color: #6c757d; font-style: italic;")
 } else if (!requireNamespace("leaflet", quietly = TRUE)) {
   htmltools::p("Install the leaflet package to see the map of records.",
                style = "color: #6c757d; font-style: italic;")
 } else {
   domains_map <- sf::st_transform(readRDS(system.file("extdata", "br_domains.rds",
                                                       package = "floraR")), 4326)
-  domain_fill <- c("Amazônia" = "#b7e4c7", "Caatinga" = "#f3e7a1", "Cerrado" = "#eeaa77",
-                   "Mata Atlântica" = "#a8dadc", "Pampa" = "#dfe7c2", "Pantanal" = "#cdb4db")
+  # The FFB domain palette (as in the FFB domain richness map)
+  domain_fill <- c("Amazônia" = "#357A6C", "Caatinga" = "#3967B9", "Cerrado" = "#A55F20",
+                   "Mata Atlântica" = "#744DAC", "Pampa" = "#B54750", "Pantanal" = "#667621")
   status <- ifelse(recs$New_domain_record_candidate, "New domain record candidate",
             ifelse(recs$New_state_record_candidate, "New state record candidate",
-            ifelse(is.na(recs$Domain), "Outside the six domains", "Within FFB distribution")))
-  status_col <- c("New domain record candidate" = "#e63946",
-                  "New state record candidate" = "#f59e0b",
-                  "Within FFB distribution" = "#2F6D3B",
-                  "Outside the six domains" = "#868e96")
+                   "Within FFB distribution"))
+  # Marker colours absent from the domain palette, so records stand out on it
+  status_col <- c("New domain record candidate" = "#FFD60A",
+                  "New state record candidate" = "#FF4040",
+                  "Within FFB distribution" = "#BDBDBD")
   esc <- function(x) htmltools::htmlEscape(ifelse(is.na(x), "", x))
   popup <- paste0("<b>", esc(recs$Identified_as), "</b><br>",
                   esc(recs$RecordedBy), " ", esc(recs$RecordNumber), " (", esc(recs$EventDate), ")<br>",
@@ -242,18 +245,18 @@ if (!isTRUE(d$domains_run) || nrow(recs) == 0) {
   ord <- order(match(status, rev(names(status_col))))
   leaflet::leaflet(width = "100%") |>
     leaflet::addProviderTiles("Esri.WorldGrayCanvas") |>  # basemap needing no API key
-    leaflet::addPolygons(data = domains_map, weight = 0.8, color = "#6b705c",
-                         fillColor = unname(domain_fill[domains_map$domain]), fillOpacity = 0.45,
+    leaflet::addPolygons(data = domains_map, weight = 1, color = "#ffffff",
+                         fillColor = unname(domain_fill[domains_map$domain]), fillOpacity = 0.85,
                          label = domains_map$domain) |>
     leaflet::addCircleMarkers(lng = recs$Longitude[ord], lat = recs$Latitude[ord],
                               radius = ifelse(status[ord] == "Within FFB distribution", 4, 6),
-                              stroke = TRUE, weight = 1, color = "#ffffff",
+                              stroke = TRUE, weight = 1.2, color = "#1B1B1B",
                               fillColor = unname(status_col[status[ord]]), fillOpacity = 0.9,
                               popup = popup[ord]) |>
     leaflet::addLegend("bottomright", colors = unname(status_col), labels = names(status_col),
                        title = "Records", opacity = 0.9) |>
     leaflet::addLegend("bottomleft", colors = unname(domain_fill), labels = names(domain_fill),
-                       title = "Phytogeographic domains", opacity = 0.6)
+                       title = "Phytogeographic domains", opacity = 1)
 }
 ```
 

@@ -47,7 +47,8 @@
 #' in FFB is a candidate new domain record. Up to \code{max_coordinates} records are
 #' read (300 per request); REFLORA specimens with coordinates are added when
 #' \code{"reflora"} is among \code{sources}. Records that fall outside the six domains
-#' (e.g. just offshore) are kept, with \code{Domain = NA}, but never flagged. This
+#' (e.g. just offshore) are kept in \code{records}, with \code{Domain = NA}, but
+#' are never flagged nor drawn on the report's map. This
 #' analysis requires the \pkg{sf} package, and the map in the HTML report the
 #' \pkg{leaflet} package; without them, they are skipped with a message.
 #'

@@ -11,3 +11,7 @@
 ^flora_download$
 ^temp\.pdf$
 ^data-raw$
+^domaincolors\.png$
+^flora_distribution_gap$
+^flora_species_gap$
+^flora_records$
