@@ -237,6 +237,7 @@ flora_download <- function(version = "latest",
             utils::download.file(url =  dwca_file,
                                  destfile = destzipfile,
                                  method = "libcurl",
+                                 mode = "wb",
                                  headers = .ipt_http_headers())
 
             utils::unzip(destzipfile, exdir = flora_database)

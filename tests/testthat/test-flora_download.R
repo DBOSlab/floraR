@@ -22,8 +22,9 @@
 
 .mock_download_unzip <- function(env = parent.frame()) {
   testthat::local_mocked_bindings(
-    download.file = function(url, destfile, method, headers) {
+    download.file = function(url, destfile, method, mode, headers) {
       expect_identical(method, "libcurl")
+      expect_identical(mode, "wb")  # binary, so the zip is not corrupted on Windows
       expect_identical(headers,
                        c(`User-Agent` = "Mozilla/5.0 (compatible; floraR/1; Linux)"))
       writeLines("mock zip content", destfile)
