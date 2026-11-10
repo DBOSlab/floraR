@@ -21,7 +21,9 @@ jobs:
         config:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
+          # leaflet (Suggests) needs raster -> terra, which does not build on
+          # R-devel at the moment; the report-map test skips without it
+          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', skip-pkgs: 'leaflet=?ignore'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
 
@@ -43,7 +45,7 @@ jobs:
         with:
           # rWCVPdata (Suggests) is not on CRAN and pak ignores Additional_repositories;
           # the tests mock it, so skip installing it here
-          extra-packages: any::rcmdcheck, rWCVPdata=?ignore
+          extra-packages: any::rcmdcheck, rWCVPdata=?ignore ${{ matrix.config.skip-pkgs }}
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
