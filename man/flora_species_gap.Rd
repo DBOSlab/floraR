@@ -18,7 +18,7 @@ flora_species_gap(
   dir = "flora_species_gap",
   filename = NULL,
   html_report = TRUE,
-  open_report = interactive()
+  open_report = FALSE
 )
 }
 \arguments{
@@ -74,8 +74,9 @@ copy or download it as CSV/Excel. Requires the \pkg{rmarkdown}, \pkg{DT}, and
 \pkg{htmltools} packages; if any is missing, the report is skipped with a message
 (the \code{.xlsx} spreadsheet is unaffected).}
 
-\item{open_report}{Logical. If \code{TRUE} (default in interactive sessions), opens
-the HTML report in the browser once rendered.}
+\item{open_report}{Logical. If \code{TRUE}, opens the HTML report in the
+browser once rendered (in interactive sessions only). Default \code{FALSE}:
+the report is only saved to \code{dir}.}
 }
 \value{
 A \code{data.frame}, one row per species-level name in the genus that is

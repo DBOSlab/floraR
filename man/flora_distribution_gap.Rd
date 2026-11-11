@@ -17,7 +17,7 @@ flora_distribution_gap(
   dir = "flora_distribution_gap",
   filename = NULL,
   html_report = TRUE,
-  open_report = interactive()
+  open_report = FALSE
 )
 }
 \arguments{
@@ -68,8 +68,9 @@ buttons to copy or download them as CSV/Excel. Requires the \pkg{rmarkdown},
 \pkg{DT}, and \pkg{htmltools} packages; if any is missing, the report is skipped with
 a message (the \code{.xlsx} spreadsheet is unaffected).}
 
-\item{open_report}{Logical. If \code{TRUE} (default in interactive sessions), opens
-the HTML report in the browser once rendered.}
+\item{open_report}{Logical. If \code{TRUE}, opens the HTML report in the
+browser once rendered (in interactive sessions only). Default \code{FALSE}:
+the report is only saved to \code{dir}.}
 }
 \value{
 A list of three \code{data.frame}s:

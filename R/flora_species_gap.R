@@ -77,7 +77,7 @@
 #'   dir = "flora_species_gap",
 #'   filename = NULL,
 #'   html_report = TRUE,
-#'   open_report = interactive()
+#'   open_report = FALSE
 #' )
 #'
 #' @param taxon Character. A single genus name of plants or algae (e.g.
@@ -132,8 +132,9 @@
 #'   \pkg{htmltools} packages; if any is missing, the report is skipped with a message
 #'   (the \code{.xlsx} spreadsheet is unaffected).
 #'
-#' @param open_report Logical. If \code{TRUE} (default in interactive sessions), opens
-#'   the HTML report in the browser once rendered.
+#' @param open_report Logical. If \code{TRUE}, opens the HTML report in the
+#'   browser once rendered (in interactive sessions only). Default \code{FALSE}:
+#'   the report is only saved to \code{dir}.
 #'
 #' @return A \code{data.frame}, one row per species-level name in the genus that is
 #'   absent from the current FFB checklist and reported by at least one source, sorted
@@ -219,7 +220,7 @@ flora_species_gap <- function(taxon,
                               dir = "flora_species_gap",
                               filename = NULL,
                               html_report = TRUE,
-                              open_report = interactive()) {
+                              open_report = FALSE) {
 
   if (missing(taxon) || is.null(taxon) || !is.character(taxon) || length(taxon) != 1) {
     stop("'taxon' must be a single character string (one genus name).",
