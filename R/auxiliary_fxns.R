@@ -1613,7 +1613,7 @@
       outs[[tx]] <- f(tx)
       next
     }
-    if (verbose) message(sprintf("\n── %s (%d/%d) ──", tx, i, length(taxa)))
+    if (verbose) message(sprintf("\n\u2500\u2500 %s (%d/%d) \u2500\u2500", tx, i, length(taxa)))
     res <- tryCatch(f(tx), error = function(e) {
       if (verbose) message("  Skipping '", tx, "': ", conditionMessage(e))
       NULL
