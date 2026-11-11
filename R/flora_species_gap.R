@@ -177,8 +177,8 @@
 #'     or it has Brazilian type specimens in GBIF, REFLORA, or JABOT.}
 #'   \item{In_FFB}{Always \code{FALSE} (kept for clarity when combining with other tables).}
 #' }
-#' POWO columns (when \code{"powo"} is among \code{sources}; \code{NA} for names only
-#' in GBIF):
+#' POWO columns (when \code{"powo"} is among \code{sources}; \code{NA} for names POWO
+#' did not report):
 #' \describe{
 #'   \item{POWO_ID, POWO_Taxonomic_status, POWO_Accepted_name}{The name's POWO (IPNI)
 #'     identifier, status (e.g. \code{"Accepted"}, \code{"Synonym"}), and accepted name.}
@@ -191,8 +191,8 @@
 #'     text"}.}
 #'   \item{POWO_URL, IPNI_URL}{Links to the name's POWO and IPNI pages.}
 #' }
-#' GBIF columns (when \code{"gbif"} is among \code{sources}; \code{NA} for names only in
-#' POWO):
+#' GBIF columns (when \code{"gbif"} is among \code{sources}; \code{NA} for names GBIF
+#' did not report):
 #' \describe{
 #'   \item{GBIF_Key, GBIF_Taxonomic_status, GBIF_Accepted_name}{The name's GBIF backbone
 #'     key, status (e.g. \code{"ACCEPTED"}, \code{"DOUBTFUL"}), and accepted species.}

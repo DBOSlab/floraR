@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+reflora_download/
+jabot_download/
+flora_download/
+flora_distribution_gap/
+flora_species_gap/

@@ -93,14 +93,14 @@
     <text x="230" y="576" text-anchor="middle" fill="#4A6B50" font-size="10.5">Species recorded in Brazil that are</text>
     <text x="230" y="592" text-anchor="middle" fill="#4A6B50" font-size="10.5">still missing from FFB, from</text>
     <text x="230" y="608" text-anchor="middle" fill="#4A6B50" font-size="10.5">POWO distributions and/or</text>
-    <text x="230" y="624" text-anchor="middle" fill="#4A6B50" font-size="10.5">Brazilian type specimens (GBIF)</text>
+    <text x="230" y="624" text-anchor="middle" fill="#4A6B50" font-size="10.5">Brazilian type specimens (GBIF / REFLORA / JABOT)</text>
 
     <!-- New state records column (one taller box) -->
     <rect x="420" y="514" width="340" height="164" rx="10" fill="#FFFFFF" stroke="#2F6D3B" stroke-width="1.5"/>
     <text x="590" y="552" text-anchor="middle" fill="#1F4D2B" font-weight="600">flora_distribution_gap()</text>
     <text x="590" y="572" text-anchor="middle" fill="#4A6B50" font-size="10.5">Brazilian states and phytogeographic</text>
     <text x="590" y="588" text-anchor="middle" fill="#4A6B50" font-size="10.5">domains with specimen evidence</text>
-    <text x="590" y="604" text-anchor="middle" fill="#4A6B50" font-size="10.5">(GBIF / REFLORA / speciesLink)</text>
+    <text x="590" y="604" text-anchor="middle" fill="#4A6B50" font-size="10.5">(GBIF / REFLORA / JABOT)</text>
     <text x="590" y="620" text-anchor="middle" fill="#4A6B50" font-size="10.5">absent from FFB's distribution for</text>
     <text x="590" y="636" text-anchor="middle" fill="#4A6B50" font-size="10.5">that taxon, mapped over the domains</text>
 
