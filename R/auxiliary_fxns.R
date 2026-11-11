@@ -1147,7 +1147,16 @@
   counts <- if (length(res$facets) > 0) res$facets[[1]]$counts else list()
   raw <- vapply(counts, function(x) as.character(x$name), character(1))
   n <- vapply(counts, function(x) as.integer(x$count), integer(1))
-  state <- .normalize_br_state(raw)
+  # GBIF is queried for Brazil only, so the country is set for
+  # barRoso::std_place() to standardise the Brazilian state values
+  if (length(raw) > 0) {
+    raw_std <- suppressMessages(barRoso::std_place(data.frame(
+      country = "Brazil", stateProvince = raw, locality = NA_character_,
+      stringsAsFactors = FALSE)))$stateProvince
+  } else {
+    raw_std <- character(0)
+  }
+  state <- .normalize_br_state(raw_std)
   keep <- !is.na(state)
   if (!any(keep)) {
     return(list(n_records = as.integer(res$count),
@@ -1221,6 +1230,11 @@
     }, character(1)))
     offset <- offset + 5000
     if (length(feats) < 5000 || offset >= max_records) break
+  }
+  if (length(states) > 0) {
+    states <- suppressMessages(barRoso::std_place(data.frame(
+      country = "Brazil", stateProvince = states, locality = NA_character_,
+      stringsAsFactors = FALSE)))$stateProvince
   }
   st <- .normalize_br_state(states)
   st <- st[!is.na(st)]
@@ -1408,4 +1422,137 @@
   }
 
   invisible(render_ok)
+}
+
+
+#_______________________________________________________________________________
+# Herbarium specimen sources read through the DBOSlab packages refloraR
+# (REFLORA Virtual Herbarium) and jabotR (JABOT, the Rio de Janeiro Botanical
+# Garden's herbarium system). On first use each downloads its herbaria's
+# DwC-A archives to "reflora_download" / "jabot_download" in the working
+# directory, and reuses them afterwards. ####
+.herbarium_sources <- list(
+  reflora = list(label = "REFLORA", pkg = "refloraR", fun = "reflora_records",
+                 column = "Reflora_records", download_dir = "reflora_download"),
+  jabot = list(label = "JABOT", pkg = "jabotR", fun = "jabot_records",
+               column = "Jabot_records", download_dir = "jabot_download")
+)
+
+
+#_______________________________________________________________________________
+# Delete the downloaded archives of the given herbarium sources ("reflora",
+# "jabot") from the working directory - for keep_downloads = FALSE ####
+.rm_herbarium_downloads <- function(sources, verbose = TRUE) {
+  dirs <- vapply(.herbarium_sources[intersect(names(.herbarium_sources), sources)],
+                 `[[`, character(1), "download_dir")
+  dirs <- dirs[dir.exists(dirs)]
+  if (length(dirs) > 0) {
+    unlink(dirs, recursive = TRUE)
+    if (verbose) message("Removed the downloaded archives: ", paste(dirs, collapse = ", "))
+  }
+  invisible(dirs)
+}
+
+
+#_______________________________________________________________________________
+# Query one herbarium source ("reflora" or "jabot") for a taxon, returning its
+# records standardised by .std_herbarium_records(), or NULL when the package
+# is not installed or the query fails ####
+.herbarium_records <- function(source, taxon, verbose = TRUE) {
+  info <- .herbarium_sources[[source]]
+  if (!requireNamespace(info$pkg, quietly = TRUE)) {
+    if (verbose) {
+      message("  Package '", info$pkg, "' is not installed; skipping ", info$label,
+              ". Install it with remotes::install_github('DBOSlab/", info$pkg,
+              "') to include this source.")
+    }
+    return(NULL)
+  }
+  if (verbose) {
+    message("Querying ", info$label, " herbarium specimens (via ", info$pkg, "; the first ",
+            "use downloads the ", info$label, " archives, and reading them can take ",
+            "several minutes)...")
+  }
+  fun <- getExportedValue(info$pkg, info$fun)
+  raw <- tryCatch(fun(taxon = taxon, verbose = FALSE, save = FALSE), error = function(e) {
+    if (verbose) message("  ", info$label, " query failed: ", conditionMessage(e))
+    NULL
+  })
+  if (is.null(raw)) return(NULL)
+  .std_herbarium_records(raw, info$label)
+}
+
+
+#_______________________________________________________________________________
+# Standardise the Darwin Core records returned by refloraR/jabotR into the
+# columns floraR uses: places are standardised with barRoso::std_place() and
+# State then normalised to FFB state names, Type_status with
+# barRoso::std_types(), Taxon_name is the species-level name of the
+# specimen's identification ("Genus epithet"; NA above species), and
+# RecordLink is the specimen's page, when the source gives one ####
+.std_herbarium_records <- function(df, label) {
+  df <- as.data.frame(df, stringsAsFactors = FALSE)
+  n <- nrow(df)
+  for (nm in c("country", "stateProvince", "municipality", "locality", "typeStatus")) {
+    if (!nm %in% names(df)) df[[nm]] <- rep(NA_character_, n)
+  }
+  if (n > 0) {
+    df <- suppressMessages(barRoso::std_types(barRoso::std_place(df)))
+  }
+  col <- function(nm) if (nm %in% names(df)) as.character(df[[nm]]) else rep(NA_character_, n)
+  num <- function(nm) suppressWarnings(as.numeric(col(nm)))
+  genus <- trimws(col("genus"))
+  epithet <- trimws(col("specificEpithet"))
+  has_epithet <- !is.na(genus) & nzchar(genus) & !is.na(epithet) & nzchar(epithet)
+  link <- col("bibliographicCitation")
+  link <- ifelse(grepl("https?://", link), sub(".*?(https?://[^[:space:]]+).*", "\\1", link),
+                 NA_character_)
+  data.frame(Source = rep(label, n),
+             Taxon_name = ifelse(has_epithet, paste(genus, epithet), NA_character_),
+             Identified_as = col("scientificName"),
+             Authors = col("scientificNameAuthorship"),
+             Type_status = col("typeStatus"),
+             Country = col("country"),
+             State = .normalize_br_state(col("stateProvince")),
+             Municipality = col("municipality"),
+             Locality = col("locality"),
+             Latitude = num("decimalLatitude"),
+             Longitude = num("decimalLongitude"),
+             RecordedBy = col("recordedBy"),
+             RecordNumber = col("recordNumber"),
+             EventDate = col("year"),
+             Institution = col("collectionCode"),
+             CatalogNumber = col("catalogNumber"),
+             RecordLink = link,
+             stringsAsFactors = FALSE)
+}
+
+
+#_______________________________________________________________________________
+# Records collected in Brazil: the country is Brazil in any spelling
+# ("Brasil", "Brazil", "Bresil", "BR"), or it is missing but the state is a
+# Brazilian state ####
+.in_brazil <- function(country, state) {
+  key <- .ffb_key(country)
+  key %in% c("brasil", "brazil", "bresil", "br") |
+    ((is.na(country) | !nzchar(trimws(country))) & !is.na(state))
+}
+
+
+#_______________________________________________________________________________
+# Unique non-empty values joined with "; ", at most 'max' of them (then
+# "; ... (n more)"); NA when there are none ####
+.collapse_unique <- function(x, max = Inf) {
+  x <- unique(x[!is.na(x) & nzchar(x)])
+  if (length(x) == 0) return(NA_character_)
+  more <- if (length(x) > max) paste0("; ... (", length(x) - max, " more)") else ""
+  paste0(paste(utils::head(x, max), collapse = "; "), more)
+}
+
+# Year range of a set of records ("1969" or "1969-2010"); NA when none ####
+.year_range <- function(years) {
+  y <- suppressWarnings(as.integer(years))
+  if (all(is.na(y))) return(NA_character_)
+  y <- range(y, na.rm = TRUE)
+  if (y[1] == y[2]) as.character(y[1]) else paste(y, collapse = "-")
 }

@@ -160,8 +160,10 @@ if (!isTRUE(d$domains_run)) {
       "domains using IBGE's biome map (2019) bundled with floraR, and the domains with",
       "records were compared against those FFB lists for", paste0("**", taxon, "**"),
       paste0("(", if (length(d$ffb_domains)) paste(d$ffb_domains, collapse = ", ") else "none", ")."),
-      "Only GBIF records without geospatial issues are used (up to",
-      format(d$max_coordinates, big.mark = ","), "records). A record close to a domain",
+      "GBIF records with geospatial issues are left out (and at most",
+      format(d$max_coordinates, big.mark = ","), "GBIF records are read);",
+      "REFLORA and JABOT specimens with coordinates are included when those sources were",
+      "queried. A record close to a domain",
       "boundary deserves a closer look before it is counted as a new domain record.\n")
 }
 ```
@@ -303,8 +305,8 @@ if (!isTRUE(d$domains_run) || nrow(recs) == 0) {
 
 Unlike the state-level table above, this table lists the individual occurrence records
 found in Brazilian states that are not yet in FFB's official distribution for
-**`r taxon`** (up to 50 GBIF records per state), each linking to the record in its
-source database.
+**`r taxon`** (up to 50 GBIF records per state, and every REFLORA and JABOT specimen),
+each linking to the record in its source database when the source gives one.
 
 ```{r table-records}
 recs <- d$records_detail

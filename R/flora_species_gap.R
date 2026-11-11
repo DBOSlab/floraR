@@ -4,18 +4,22 @@
 #' Given a genus of plants or algae, finds the species-level names that global sources
 #' record for Brazil but that are not currently registered in the Flora e Funga do
 #' Brasil (FFB) - candidates for inclusion in the FFB monograph of the group. Two
-#' independent kinds of evidence are combined (see \code{sources}):
+#' independent kinds of evidence, from up to four sources, are combined (see
+#' \code{sources}):
 #' \itemize{
 #'   \item \strong{POWO distributions}: species that
 #'     \href{https://powo.science.kew.org}{Plants of the World Online} (POWO, Royal
 #'     Botanic Gardens, Kew) maps in Brazil;
-#'   \item \strong{GBIF type specimens}: species whose type specimens - holotypes,
+#'   \item \strong{Type specimens}: species whose type specimens - holotypes,
 #'     isotypes, lectotypes, syntypes, paratypes, and so on - were collected in Brazil,
 #'     according to the herbaria that publish them through the
-#'     \href{https://www.gbif.org}{Global Biodiversity Information Facility} (GBIF).
+#'     \href{https://www.gbif.org}{Global Biodiversity Information Facility} (GBIF),
+#'     the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora
+#'     Virtual Herbarium}, and \href{https://jabot.jbrj.gov.br}{JABOT}.
 #' }
 #' The result is a single table, one row per name, stating which source(s) reported it:
-#' names reported by both are the strongest candidates. This is not a general diff of
+#' the more sources report a name, the stronger the candidate, and combining them
+#' retrieves as many gaps as possible. This is not a general diff of
 #' the databases: a name missing from FFB is only returned when there is evidence that
 #' the species occurs in Brazil.
 #'
@@ -62,10 +66,26 @@
 #' many names per request, and summarised. Types are filed in GBIF under their current
 #' identification - usually the typified name - which \code{GBIF_Specimen_names} shows.
 #'
+#' \strong{REFLORA} (\code{"reflora"}) and \strong{JABOT} (\code{"jabot"}). The
+#' specimens of the genus are read with \code{\link[refloraR]{reflora_records}} and
+#' \code{\link[jabotR]{jabot_records}} (requiring the \pkg{refloraR} and \pkg{jabotR}
+#' packages), from their herbaria's Darwin Core archives: the first use downloads them -
+#' several gigabytes - to \code{"reflora_download"} and \code{"jabot_download"} in the
+#' working directory, where they are reused by later calls, and each call still takes a
+#' few minutes to read them. The species-level names of the specimens collected in
+#' Brazil that are types (any type status) are compared with FFB; as in GBIF, a
+#' specimen is filed under its current identification. Use \code{sources = c("powo",
+#' "gbif")} for a quick check.
+#'
+#' In all three specimen sources, type statuses are standardised with
+#' \code{barRoso::std_types()} (e.g. \code{"HOLOTYPUS"} and \code{"Holotype"} both
+#' become \code{"holotype"}) and places with \code{barRoso::std_place()}.
+#'
 #' @usage
 #' flora_species_gap(
 #'   taxon,
-#'   sources = c("powo", "gbif"),
+#'   sources = c("powo", "gbif", "reflora", "jabot"),
+#'   keep_downloads = TRUE,
 #'   powo_source = c("rWCVPdata", "checklistbank"),
 #'   require_brazil_evidence = TRUE,
 #'   type_status = NULL,
@@ -83,9 +103,17 @@
 #' @param taxon Character. A single genus name of plants or algae (e.g.
 #'   \code{"Myrcia"}, \code{"Gracilaria"}). Fungi are not searched.
 #'
-#' @param sources Character vector. Which kinds of evidence to use: \code{"powo"}
-#'   (POWO distributions), \code{"gbif"} (Brazilian type specimens in GBIF), or both
-#'   (default).
+#' @param sources Character vector. Which sources of evidence to use: any of
+#'   \code{"powo"} (POWO distributions), \code{"gbif"}, \code{"reflora"}, and
+#'   \code{"jabot"} (Brazilian type specimens in GBIF, REFLORA, and JABOT). Defaults to
+#'   all four, combining their evidence; see Details for the requirements of each.
+#'
+#' @param keep_downloads Logical. Applies to REFLORA and JABOT. If \code{TRUE}
+#'   (default), the herbarium archives downloaded to \code{"reflora_download"} and
+#'   \code{"jabot_download"} in the working directory are kept, so that later runs -
+#'   for this or other taxa - reuse them instead of downloading them again. If
+#'   \code{FALSE}, those folders are deleted once the analysis is finished, leaving the
+#'   working directory clean (they take several gigabytes).
 #'
 #' @param powo_source Character. Where POWO's data is read from: \code{"rWCVPdata"}
 #'   (default; fast, local) or \code{"checklistbank"} (always current, slower). See
@@ -94,8 +122,8 @@
 #' @param require_brazil_evidence Logical. Applies to POWO. If \code{TRUE} (default),
 #'   POWO names are only kept when POWO places the species in Brazil. Set to
 #'   \code{FALSE} to also return POWO names missing from FFB regardless of distribution,
-#'   for manual review. (GBIF names always have Brazil evidence: their types were
-#'   collected there.)
+#'   for manual review. (Names from the specimen sources always have Brazil evidence:
+#'   their types were collected there.)
 #'
 #' @param type_status Character or \code{NULL}. Applies to GBIF. Type statuses counted
 #'   as evidence (GBIF's current vocabulary, e.g. \code{"Holotype"}, \code{"Isotype"}).
@@ -138,14 +166,15 @@
 #'
 #' @return A \code{data.frame}, one row per species-level name in the genus that is
 #'   absent from the current FFB checklist and reported by at least one source, sorted
-#'   with the names reported by both sources first. Common columns:
+#'   with the names reported by more sources first. Common columns:
 #' \describe{
 #'   \item{Taxon_name, Authors}{The name and its author citation.}
-#'   \item{Accepted_name}{The accepted name (POWO's when available, else GBIF's).}
-#'   \item{Found_in}{Which source(s) reported the name: \code{"POWO; GBIF"},
-#'     \code{"POWO"}, or \code{"GBIF"}.}
+#'   \item{Accepted_name}{The accepted name (POWO's when available, else GBIF's;
+#'     for names only in REFLORA or JABOT, the name itself).}
+#'   \item{Found_in}{Which source(s) reported the name, e.g. \code{"POWO; GBIF; REFLORA"},
+#'     \code{"GBIF; JABOT"}, or \code{"POWO"}.}
 #'   \item{Brazil_evidence}{Logical; \code{TRUE} when POWO places the species in Brazil
-#'     or it has Brazilian type specimens in GBIF.}
+#'     or it has Brazilian type specimens in GBIF, REFLORA, or JABOT.}
 #'   \item{In_FFB}{Always \code{FALSE} (kept for clarity when combining with other tables).}
 #' }
 #' POWO columns (when \code{"powo"} is among \code{sources}; \code{NA} for names only
@@ -170,13 +199,24 @@
 #'   \item{GBIF_N_type_specimens, GBIF_Type_statuses}{Number of type specimens collected
 #'     in Brazil, and their type categories.}
 #'   \item{GBIF_Type_specimens}{Up to ten specimens as herbarium, catalogue number, and
-#'     type status (e.g. \code{"RB 00123 (Holotype)"}).}
+#'     type status (e.g. \code{"RB 00123 (holotype)"}).}
 #'   \item{GBIF_Specimen_names}{The names the types are filed under - usually the
 #'     typified name, e.g. the basionym of a species.}
 #'   \item{GBIF_Collectors, GBIF_Years, GBIF_States}{Collectors, collection years, and
 #'     Brazilian states of those specimens.}
 #'   \item{GBIF_Published_in, GBIF_URL}{Protologue citation, when GBIF has it, and a link
 #'     to the name's GBIF page.}
+#' }
+#' REFLORA and JABOT columns (when \code{"reflora"} or \code{"jabot"} is among
+#' \code{sources}), prefixed \code{REFLORA_} or \code{JABOT_}:
+#' \describe{
+#'   \item{N_type_specimens, Type_statuses, Type_specimens}{Number of type specimens
+#'     collected in Brazil, their type categories, and up to ten of them as herbarium,
+#'     catalogue number, and type status.}
+#'   \item{Collectors, Years, States}{Collectors, collection years, and Brazilian states
+#'     of those specimens.}
+#'   \item{Links}{Up to three links to the specimens' pages (REFLORA only; JABOT records
+#'     carry no link).}
 #' }
 #'
 #' @seealso \code{\link{flora_distribution_gap}}, \code{\link{flora_download}}
@@ -187,8 +227,11 @@
 #' @examples
 #' \dontrun{
 #' # Species of Myrcia recorded in Brazil by POWO and/or with Brazilian type
-#' # specimens in GBIF, but missing from FFB
+#' # specimens in GBIF, REFLORA, or JABOT, but missing from FFB
 #' gap <- flora_species_gap(taxon = "Myrcia")
+#'
+#' # A quick check, without the REFLORA and JABOT archives
+#' gap_quick <- flora_species_gap(taxon = "Myrcia", sources = c("powo", "gbif"))
 #'
 #' # POWO only, read live from ChecklistBank instead of the local WCVP copy
 #' gap_powo <- flora_species_gap(taxon = "Myrcia", sources = "powo",
@@ -208,7 +251,8 @@
 #' @export
 
 flora_species_gap <- function(taxon,
-                              sources = c("powo", "gbif"),
+                              sources = c("powo", "gbif", "reflora", "jabot"),
+                              keep_downloads = TRUE,
                               powo_source = c("rWCVPdata", "checklistbank"),
                               require_brazil_evidence = TRUE,
                               type_status = NULL,
@@ -227,7 +271,10 @@ flora_species_gap <- function(taxon,
          call. = FALSE)
   }
   taxon <- trimws(taxon)
-  sources <- match.arg(sources, c("powo", "gbif"), several.ok = TRUE)
+  sources <- match.arg(sources, c("powo", "gbif", "reflora", "jabot"), several.ok = TRUE)
+  if (!isTRUE(keep_downloads)) {
+    on.exit(.rm_herbarium_downloads(sources, verbose), add = TRUE)
+  }
   powo_source <- match.arg(powo_source)
   if (is.null(type_status)) type_status <- .gbif_type_status
 
@@ -285,18 +332,29 @@ flora_species_gap <- function(taxon,
   if (!is.null(genus)) {
     gbif <- .gbif_species_candidates(genus, ffb_keys, type_status, verbose)
   }
+  herbaria <- list()
+  for (src in intersect(c("reflora", "jabot"), sources)) {
+    recs <- .herbarium_records(src, taxon, verbose)
+    if (!is.null(recs)) {
+      herbaria[[src]] <- .herbarium_species_candidates(recs, taxon, ffb_keys,
+                                                       .herbarium_sources[[src]]$label,
+                                                       verbose)
+    }
+  }
+  candidates <- function(x) if (is.null(x)) NULL else x$result
 
   # ------------------------------------------------------------------------
   # 3. One table, one row per name
   # ------------------------------------------------------------------------
-  result <- .merge_species_candidates(if (is.null(powo)) NULL else powo$result,
-                                      if (is.null(gbif)) NULL else gbif$result)
+  result <- .merge_species_candidates(candidates(powo), candidates(gbif),
+                                      candidates(herbaria$reflora),
+                                      candidates(herbaria$jabot))
+  n_multi <- sum(grepl(";", result$Found_in))
 
   if (verbose) {
-    n_both <- sum(result$Found_in == "POWO; GBIF")
     message(sprintf("\n\u2713 %d species of '%s' found missing from FFB%s", nrow(result),
-                    taxon, if (length(sources) == 2) {
-                      sprintf(" (%d reported by both POWO and GBIF)", n_both)
+                    taxon, if (length(sources) > 1) {
+                      sprintf(" (%d reported by more than one source)", n_multi)
                     } else ""))
   }
 
@@ -317,17 +375,23 @@ flora_species_gap <- function(taxon,
       if (!is.null(gbif)) {
         paste0("GBIF type specimens collected in Brazil (", genus$name, ", ",
                genus$kingdom, ")")
-      }
+      },
+      if (!is.null(herbaria$reflora)) "REFLORA type specimens collected in Brazil (refloraR)",
+      if (!is.null(herbaria$jabot)) "JABOT type specimens collected in Brazil (jabotR)"
     )
     report_data <- list(
       taxon = taxon,
-      sources = c(if (!is.null(powo)) "POWO", if (!is.null(gbif)) "GBIF"),
+      sources = c(if (!is.null(powo)) "POWO", if (!is.null(gbif)) "GBIF",
+                  if (!is.null(herbaria$reflora)) "REFLORA",
+                  if (!is.null(herbaria$jabot)) "JABOT"),
       source_lines = source_lines,
       n_in_ffb = length(ffb$genus),
       n_powo_names = if (is.null(powo)) NA_integer_ else powo$n_names,
       n_gbif_names = if (is.null(gbif)) NA_integer_ else gbif$n_names,
+      n_reflora_names = if (is.null(herbaria$reflora)) NA_integer_ else herbaria$reflora$n_names,
+      n_jabot_names = if (is.null(herbaria$jabot)) NA_integer_ else herbaria$jabot$n_names,
       n_missing = nrow(result),
-      n_both = sum(result$Found_in == "POWO; GBIF"),
+      n_multi = n_multi,
       brazil_filtered = require_brazil_evidence,
       result = result
     )
@@ -466,6 +530,20 @@ flora_species_gap <- function(taxon,
   } else {
     .gbif_type_specimens(character(0))
   }
+  # Standardise the type statuses (barRoso::std_types(), each of a specimen's
+  # statuses separately) and states (barRoso::std_place())
+  if (nrow(specimens) > 0) {
+    statuses <- strsplit(specimens$Type_status, ",\\s*")
+    std <- suppressMessages(barRoso::std_types(data.frame(
+      typeStatus = unlist(statuses), stringsAsFactors = FALSE)))$typeStatus
+    specimens$Type_status <- vapply(split(std, rep(seq_along(statuses), lengths(statuses))),
+                                    .collapse_unique, character(1), USE.NAMES = FALSE)
+    # GBIF is queried for Brazil only: the country is set for barRoso::std_place()
+    specimens$State <- .normalize_br_state(suppressMessages(barRoso::std_place(data.frame(
+      country = "Brazil", stateProvince = specimens$State, locality = NA_character_,
+      stringsAsFactors = FALSE)))$stateProvince)
+  }
+
   # A query for a key also returns its synonyms' types, filed under their own
   # keys: assign each specimen to the requested name via its own, accepted,
   # or species key
@@ -473,27 +551,20 @@ flora_species_gap <- function(taxon,
                             ifelse(specimens$Accepted_key %in% missing$GBIF_Key,
                                    specimens$Accepted_key, specimens$Species_key))
 
-  collapse_unique <- function(x, max = Inf) {
-    x <- unique(x[!is.na(x) & nzchar(x)])
-    if (length(x) == 0) return(NA_character_)
-    more <- if (length(x) > max) paste0("; ... (", length(x) - max, " more)") else ""
-    paste0(paste(utils::head(x, max), collapse = "; "), more)
-  }
+  collapse_unique <- .collapse_unique
   summarise <- function(key, field) {
     sp <- specimens[specimens$Owner %in% key, ]
     if (nrow(sp) == 0) return(NA_character_)
     switch(field,
-           statuses = collapse_unique(unlist(strsplit(sp$Type_status, ",\\s*"))),
+           statuses = collapse_unique(unlist(strsplit(sp$Type_status, ";\\s*"))),
            specimens = collapse_unique(trimws(paste0(
              ifelse(is.na(sp$Institution), "", sp$Institution), " ",
              ifelse(is.na(sp$Catalog_number), "", sp$Catalog_number),
-             " (", sp$Type_status, ")")), max = 10),
+             ifelse(is.na(sp$Type_status), "", paste0(" (", sp$Type_status, ")")))),
+             max = 10),
            names = collapse_unique(sp$Specimen_name),
            collectors = collapse_unique(sp$Collector, max = 5),
-           years = if (all(is.na(sp$Year))) NA_character_ else {
-             y <- range(as.integer(sp$Year), na.rm = TRUE)
-             if (y[1] == y[2]) as.character(y[1]) else paste(y, collapse = "-")
-           },
+           years = .year_range(sp$Year),
            states = collapse_unique(sp$State))
   }
   per_name <- function(field) {
@@ -524,58 +595,119 @@ flora_species_gap <- function(taxon,
 
 
 #_______________________________________________________________________________
-# Merge the POWO and GBIF candidates into one row per name (matched by
-# .name_key(), so spelling variants merge), adding Found_in and
-# Brazil_evidence, and sorting names reported by both sources first. Either
-# input may be NULL (source not used). ####
-.merge_species_candidates <- function(powo, gbif) {
+# Herbarium candidates (REFLORA, JABOT): species-level names of the genus
+# whose specimens collected in Brazil include types, not registered in FFB.
+# 'recs' are records standardised by .std_herbarium_records(), so the type
+# statuses are already standardised with barRoso::std_types(). Returns
+# list(result, n_names) - one row per missing name, with <LABEL>_* columns -
+# matching the shape of the GBIF candidates. ####
+.herbarium_species_candidates <- function(recs, genus, ffb_keys, label, verbose = TRUE) {
+  typed <- recs[!is.na(recs$Type_status) & !is.na(recs$Taxon_name) &
+                  .in_brazil(recs$Country, recs$State) &
+                  .name_key(sub("\\s.*", "", recs$Taxon_name)) == .name_key(genus), ,
+                drop = FALSE]
+  typed$.key <- .name_key(typed$Taxon_name)
+  if (verbose) {
+    message("  ", length(unique(typed$.key)), " species-level name(s) have type specimens ",
+            "collected in Brazil in ", label, ".")
+  }
+  missing <- typed[!typed$.key %in% ffb_keys, , drop = FALSE]
+  keys <- unique(missing$.key)
+
+  first <- function(x) { x <- x[!is.na(x) & nzchar(x)]; if (length(x)) x[1] else NA_character_ }
+  per_name <- function(f) vapply(keys, function(k) f(missing[missing$.key == k, ]),
+                                 character(1), USE.NAMES = FALSE)
+  taxon_name <- per_name(function(sp) first(sp$Taxon_name))
+  result <- data.frame(
+    Taxon_name = taxon_name,
+    Authors = per_name(function(sp) first(sp$Authors)),
+    Accepted_name = taxon_name,
+    N_type_specimens = vapply(keys, function(k) sum(missing$.key == k), integer(1),
+                              USE.NAMES = FALSE),
+    Type_statuses = per_name(function(sp) .collapse_unique(sp$Type_status)),
+    Type_specimens = per_name(function(sp) .collapse_unique(trimws(paste0(
+      ifelse(is.na(sp$Institution), "", sp$Institution), " ",
+      ifelse(is.na(sp$CatalogNumber), "", sp$CatalogNumber),
+      " (", sp$Type_status, ")")), max = 10)),
+    Collectors = per_name(function(sp) .collapse_unique(sp$RecordedBy, max = 5)),
+    Years = per_name(function(sp) .year_range(sp$EventDate)),
+    States = per_name(function(sp) .collapse_unique(sp$State)),
+    Links = per_name(function(sp) .collapse_unique(sp$RecordLink, max = 3)),
+    stringsAsFactors = FALSE
+  )
+  if (verbose && nrow(result) > 0) {
+    message("  ", nrow(result), " of them not in FFB.")
+  }
+  prefixed <- setdiff(names(result), c("Taxon_name", "Authors", "Accepted_name"))
+  names(result)[names(result) %in% prefixed] <- paste0(label, "_", prefixed)
+  list(result = result, n_names = length(unique(typed$.key)))
+}
+
+
+# Columns contributed by each source to the merged table
+.species_gap_columns <- list(
+  POWO = c("POWO_ID", "POWO_Taxonomic_status", "POWO_Accepted_name", "POWO_Year",
+           "POWO_Published_in", "POWO_Range", "POWO_Distribution", "POWO_Brazil_Areas",
+           "POWO_Brazil_Evidence", "POWO_Evidence_Source", "POWO_URL", "IPNI_URL"),
+  GBIF = c("GBIF_Key", "GBIF_Taxonomic_status", "GBIF_Accepted_name",
+           "GBIF_N_type_specimens", "GBIF_Type_statuses", "GBIF_Type_specimens",
+           "GBIF_Specimen_names", "GBIF_Collectors", "GBIF_Years", "GBIF_States",
+           "GBIF_Published_in", "GBIF_URL"),
+  REFLORA = paste0("REFLORA_", c("N_type_specimens", "Type_statuses", "Type_specimens",
+                                 "Collectors", "Years", "States", "Links")),
+  JABOT = paste0("JABOT_", c("N_type_specimens", "Type_statuses", "Type_specimens",
+                             "Collectors", "Years", "States", "Links"))
+)
+
+
+#_______________________________________________________________________________
+# Merge the candidates of each source (POWO, GBIF, REFLORA, JABOT) into one
+# row per name (matched by .name_key(), so spelling variants merge), adding
+# Found_in (the sources reporting the name, e.g. "POWO; GBIF; REFLORA") and
+# Brazil_evidence, and sorting the names reported by more sources first. The
+# name, authors, and accepted name come from the first source, in that order,
+# that reports them. Any input may be NULL (source not used). ####
+.merge_species_candidates <- function(powo = NULL, gbif = NULL, reflora = NULL, jabot = NULL) {
   common <- c("Taxon_name", "Authors", "Accepted_name")
-  empty_common <- data.frame(Taxon_name = character(0), Authors = character(0),
-                             Accepted_name = character(0), stringsAsFactors = FALSE)
-  p <- if (is.null(powo)) NULL else powo
-  g <- if (is.null(gbif)) NULL else gbif
+  tabs <- list(POWO = powo, GBIF = gbif, REFLORA = reflora, JABOT = jabot)
+  tabs <- tabs[!vapply(tabs, is.null, logical(1))]
 
-  if (!is.null(p)) p$.key <- .name_key(p$Taxon_name)
-  if (!is.null(g)) g$.key <- .name_key(g$Taxon_name)
-
-  if (!is.null(p) && !is.null(g)) {
-    names(p)[names(p) %in% common] <- paste0(".p_", names(p)[names(p) %in% common])
-    names(g)[names(g) %in% common] <- paste0(".g_", names(g)[names(g) %in% common])
-    m <- merge(p, g, by = ".key", all = TRUE, sort = FALSE)
-    for (col in common) {
-      pc <- m[[paste0(".p_", col)]]
-      m[[col]] <- ifelse(is.na(pc), m[[paste0(".g_", col)]], pc)
+  m <- NULL
+  for (lab in names(tabs)) {
+    t <- tabs[[lab]]
+    t$.key <- .name_key(t$Taxon_name)
+    t[[paste0(".in_", lab)]] <- rep(TRUE, nrow(t))
+    if (is.null(m)) {
+      m <- t
+      next
     }
-    in_powo <- !is.na(m$POWO_ID) | !is.na(m$.p_Taxon_name)
-    in_gbif <- !is.na(m$GBIF_Key)
-  } else if (!is.null(p)) {
-    m <- p
-    in_powo <- rep(TRUE, nrow(m))
-    in_gbif <- rep(FALSE, nrow(m))
-  } else if (!is.null(g)) {
-    m <- g
-    in_powo <- rep(FALSE, nrow(m))
-    in_gbif <- rep(TRUE, nrow(m))
-  } else {
-    m <- empty_common
-    in_powo <- in_gbif <- logical(0)
+    names(t)[names(t) %in% common] <- paste0(".new_", names(t)[names(t) %in% common])
+    m <- merge(m, t, by = ".key", all = TRUE, sort = FALSE)
+    for (col in common) {
+      m[[col]] <- ifelse(is.na(m[[col]]), m[[paste0(".new_", col)]], m[[col]])
+      m[[paste0(".new_", col)]] <- NULL
+    }
+  }
+  if (is.null(m)) {
+    m <- data.frame(Taxon_name = character(0), Authors = character(0),
+                    Accepted_name = character(0), stringsAsFactors = FALSE)
   }
 
-  m$Found_in <- ifelse(in_powo & in_gbif, "POWO; GBIF", ifelse(in_powo, "POWO", "GBIF"))
+  inside <- do.call(cbind, c(list(matrix(logical(0), nrow = nrow(m), ncol = 0)),
+                             lapply(names(tabs), function(lab) m[[paste0(".in_", lab)]] %in% TRUE)))
+  m$Found_in <- if (nrow(m) == 0) character(0) else {
+    apply(inside, 1, function(r) paste(names(tabs)[r], collapse = "; "))
+  }
   powo_evidence <- if ("POWO_Brazil_Evidence" %in% names(m)) m$POWO_Brazil_Evidence %in% TRUE else FALSE
-  m$Brazil_evidence <- powo_evidence | in_gbif
+  specimen_evidence <- if (ncol(inside) > 0) {
+    rowSums(inside[, names(tabs) != "POWO", drop = FALSE]) > 0
+  } else logical(0)
+  m$Brazil_evidence <- powo_evidence | specimen_evidence
   m$In_FFB <- logical(nrow(m))
 
-  powo_cols <- c("POWO_ID", "POWO_Taxonomic_status", "POWO_Accepted_name", "POWO_Year",
-                 "POWO_Published_in", "POWO_Range", "POWO_Distribution", "POWO_Brazil_Areas",
-                 "POWO_Brazil_Evidence", "POWO_Evidence_Source", "POWO_URL", "IPNI_URL")
-  gbif_cols <- c("GBIF_Key", "GBIF_Taxonomic_status", "GBIF_Accepted_name",
-                 "GBIF_N_type_specimens", "GBIF_Type_statuses", "GBIF_Type_specimens",
-                 "GBIF_Specimen_names", "GBIF_Collectors", "GBIF_Years", "GBIF_States",
-                 "GBIF_Published_in", "GBIF_URL")
   cols <- c(common, "Found_in", "Brazil_evidence",
-            if (!is.null(powo)) powo_cols, if (!is.null(gbif)) gbif_cols, "In_FFB")
-  m <- m[order(-(m$Found_in == "POWO; GBIF"), m$Taxon_name), cols, drop = FALSE]
+            unlist(.species_gap_columns[names(tabs)], use.names = FALSE), "In_FFB")
+  m <- m[order(-rowSums(inside), m$Taxon_name), intersect(cols, names(m)), drop = FALSE]
   rownames(m) <- NULL
   m
 }

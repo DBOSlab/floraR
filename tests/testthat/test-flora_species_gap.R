@@ -105,6 +105,9 @@
     .ffb_names = function(taxon, version) {
       list(genus = taxon_names, all = c(taxon_names, other_names))
     },
+    # REFLORA and JABOT are queried by default: no archives in tests, unless a
+    # test mocks them with herbarium records
+    .herbarium_records = function(source, taxon, verbose = TRUE) NULL,
     .package = "floraR",
     .env = env
   )
@@ -289,8 +292,9 @@ test_that("GBIF: summarises each name's Brazilian type specimens", {
   h <- result[result$Taxon_name == "Luetzelburgia harleyi", ]
 
   expect_equal(h$GBIF_N_type_specimens, 3L)
-  expect_equal(h$GBIF_Type_statuses, "Holotype; Isotype")
-  expect_equal(h$GBIF_Type_specimens, "RB 00123 (Holotype); K K0001 (Isotype); NY NY9 (Isotype)")
+  # Type statuses standardised with barRoso::std_types()
+  expect_equal(h$GBIF_Type_statuses, "holotype; isotype")
+  expect_equal(h$GBIF_Type_specimens, "RB 00123 (holotype); K K0001 (isotype); NY NY9 (isotype)")
   expect_equal(h$GBIF_Years, "2006-2007")
   expect_equal(h$GBIF_States, "Bahia; Minas Gerais")
   expect_equal(h$GBIF_URL, "https://www.gbif.org/species/11")
@@ -516,4 +520,65 @@ test_that(".name_key collapses hyphen and genitive-ending variants", {
   expect_equal(.name_key("Luetzelburgia freire-allemanii"), .name_key("Luetzelburgia freire-allemani"))
   expect_equal(.name_key("Myrcia aegiphylloides"), .name_key("Myrcia aegyphylloides"))
   expect_false(.name_key("Myrcia alba") == .name_key("Myrcia albida"))
+})
+
+
+# ---------------------------------------------------------------------------
+# REFLORA and JABOT type specimens
+# ---------------------------------------------------------------------------
+.herbarium_types <- function(label, epithets, status, country = "Brasil",
+                             state = "Bahia") {
+  raw <- data.frame(collectionCode = "HUEFS", catalogNumber = seq_along(epithets),
+                    genus = "Luetzelburgia", specificEpithet = epithets,
+                    scientificName = paste("Luetzelburgia", epithets),
+                    scientificNameAuthorship = "Cardoso", country = country,
+                    stateProvince = state, recordedBy = "D. Cardoso", year = "2010",
+                    typeStatus = status, stringsAsFactors = FALSE)
+  .std_herbarium_records(raw, label)
+}
+
+.mock_herbaria <- function(reflora = NULL, jabot = NULL, env = parent.frame()) {
+  testthat::local_mocked_bindings(
+    .herbarium_records = function(source, taxon, verbose = TRUE) {
+      list(reflora = reflora, jabot = jabot)[[source]]
+    },
+    .package = "floraR",
+    .env = env
+  )
+}
+
+
+test_that("REFLORA/JABOT: Brazilian types of names missing from FFB are reported", {
+  .mock_ffb(c("Luetzelburgia auriculata", "Luetzelburgia andradelimae"))
+  .mock_herbaria(
+    reflora = .herbarium_types("REFLORA",
+                               c("nova", "nova", "auriculata", "andrade-limae", "exotica", "comum"),
+                               c("HOLOTYPUS", "ISOTYPUS", "ISOTYPUS", "TYPUS", "HOLOTYPUS", NA),
+                               country = c(rep("Brasil", 4), "Bolivia", "Brasil")),
+    jabot = .herbarium_types("JABOT", "nova", "Isotype", country = "Brazil"))
+
+  r <- gap(sources = c("reflora", "jabot"))
+  # In FFB (also as a spelling variant), collected outside Brazil, or not a type: left out
+  expect_equal(r$Taxon_name, "Luetzelburgia nova")
+  expect_equal(r$Found_in, "REFLORA; JABOT")
+  expect_true(r$Brazil_evidence)
+  expect_equal(r$REFLORA_N_type_specimens, 2L)
+  expect_equal(r$REFLORA_Type_statuses, "holotype; isotype")
+  expect_equal(r$JABOT_Type_statuses, "isotype")
+  expect_equal(r$REFLORA_States, "Bahia")
+})
+
+
+test_that("names reported by more sources are listed first", {
+  .mock_gbif()
+  .mock_ffb(character(0))
+  .mock_herbaria(reflora = .herbarium_types("REFLORA", c("harleyi", "nova"),
+                                            c("Holotype", "Holotype")))
+
+  r <- gap(sources = c("gbif", "reflora"))
+  expect_equal(r$Taxon_name[1], "Luetzelburgia harleyi")
+  expect_equal(r$Found_in[1], "GBIF; REFLORA")
+  expect_equal(r$Found_in[r$Taxon_name == "Luetzelburgia nova"], "REFLORA")
+  expect_true(all(c("GBIF_Key", "REFLORA_Type_specimens") %in% names(r)))
+  expect_false(any(grepl("^JABOT_", names(r))))
 })

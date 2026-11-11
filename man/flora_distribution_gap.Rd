@@ -7,7 +7,8 @@
 flora_distribution_gap(
   taxon,
   state = NULL,
-  sources = "gbif",
+  sources = c("gbif", "reflora", "jabot"),
+  keep_downloads = TRUE,
   specieslink_key = Sys.getenv("SPECIESLINK_KEY"),
   domains = TRUE,
   max_coordinates = 5000,
@@ -29,8 +30,17 @@ acronym) to restrict the check to. \code{NULL} (default) checks all states with 
 evidence.}
 
 \item{sources}{Character vector. Which occurrence sources to query: any of
-\code{"gbif"}, \code{"reflora"}, \code{"speciesLink"}. Defaults to \code{"gbif"},
-the fastest. See Details for the requirements of the other two.}
+\code{"gbif"}, \code{"reflora"}, \code{"jabot"}, \code{"speciesLink"}. Defaults
+to \code{c("gbif", "reflora", "jabot")}, combining the evidence of all three
+collection databases; \code{"gbif"} alone is the fastest. See Details for the
+requirements of each.}
+
+\item{keep_downloads}{Logical. Applies to REFLORA and JABOT. If \code{TRUE}
+(default), the herbarium archives downloaded to \code{"reflora_download"} and
+\code{"jabot_download"} in the working directory are kept, so that later runs -
+for this or other taxa - reuse them instead of downloading them again. If
+\code{FALSE}, those folders are deleted once the analysis is finished, leaving the
+working directory clean (they take several gigabytes).}
 
 \item{specieslink_key}{Character. speciesLink API key, used when
 \code{"speciesLink"} is among \code{sources}. Defaults to the
@@ -78,7 +88,8 @@ A list of three \code{data.frame}s:
   \item{\code{states}}{One row per Brazilian state with any evidence for
     \code{taxon} (in FFB or in the queried sources): \code{Taxon}, \code{State},
     \code{In_FFB_distribution} (whether FFB already lists the state),
-    \code{GBIF_records}, \code{Reflora_records}, and \code{speciesLink_records}
+    \code{GBIF_records}, \code{Reflora_records}, \code{Jabot_records}, and
+    \code{speciesLink_records}
     (records in the state, for each source queried), and
     \code{New_state_record_candidate} (\code{TRUE} when the state has evidence from
     at least one source but is not in FFB's distribution).}
@@ -96,10 +107,10 @@ With \code{save = TRUE}, each table is saved as a sheet of the \code{.xlsx}
 spreadsheet.
 }
 \description{
-Given a genus or species of plants or algae, checks \href{https://www.gbif.org}{GBIF}
-and, optionally, the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora
-Virtual Herbarium} and \href{https://specieslink.net}{speciesLink} for specimen and
-occurrence evidence of the taxon in Brazilian states that are \emph{not} currently
+Given a genus or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
+the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora Virtual
+Herbarium}, \href{https://jabot.jbrj.gov.br}{JABOT}, and, optionally,
+\href{https://specieslink.net}{speciesLink} for specimen and occurrence evidence of the taxon in Brazilian states that are \emph{not} currently
 listed in its official Flora e Funga do Brasil (FFB) distribution. This flags
 candidate new state records for a taxonomist to verify - e.g. a species listed by FFB
 only for Bahia, but with herbarium specimens from Pernambuco - so that the
@@ -114,24 +125,32 @@ For a genus, the states of all its species and infraspecific taxa are combined; 
 species, those of the species and its infraspecific taxa. If the name is a synonym in
 FFB, the distribution of its accepted name is used.
 
-\strong{Occurrence evidence.} Up to three sources can be queried (see
-\code{sources}):
+\strong{Occurrence evidence.} Up to four sources can be queried (see
+\code{sources}); by default GBIF, REFLORA, and JABOT are all queried, and their
+evidence is combined, so that a state reported by any one of them is flagged:
 \describe{
-  \item{\code{"gbif"} (default)}{GBIF's public API, which aggregates most Brazilian
+  \item{\code{"gbif"}}{GBIF's public API, which aggregates most Brazilian
     herbaria. The name is first resolved to its GBIF backbone key among plants and
     algae only (so, e.g., the red alga \emph{Gracilaria} is not confused with the
     moth genus of the same name), so the records of its synonyms and infraspecific
     taxa are included. All states are counted in a single request.}
   \item{\code{"reflora"}}{REFLORA herbarium specimens, via
-    \code{\link[refloraR]{reflora_records}} (requires the \pkg{refloraR} package).
-    Note that the first use downloads the Reflora herbarium archives - several
-    gigabytes - which \pkg{refloraR} then caches for later calls.}
+    \code{\link[refloraR]{reflora_records}} (requires the \pkg{refloraR} package).}
+  \item{\code{"jabot"}}{Specimens of the herbaria hosted by JABOT, the Rio de
+    Janeiro Botanical Garden's herbarium system, via
+    \code{\link[jabotR]{jabot_records}} (requires the \pkg{jabotR} package).}
   \item{\code{"speciesLink"}}{speciesLink's API, which requires a free API key
     (\code{specieslink_key}; create one at \url{https://specieslink.net}).}
 }
-Free-text state values in these sources (e.g. \code{"Ba"}, \code{"Est. do Bahia"},
-\code{"Paraiba"}) are normalised to FFB state names before comparison; values that are
-not Brazilian states are ignored.
+REFLORA and JABOT are read from their herbaria's Darwin Core archives: the first
+use downloads them - several gigabytes - to \code{"reflora_download"} and
+\code{"jabot_download"} in the working directory, where they are reused by later
+calls, and each call still takes a few minutes to read them. Only their specimens
+collected in Brazil are counted. Use \code{sources = "gbif"} for a quick check.
+The place fields of all sources are standardised with \code{barRoso::std_place()},
+so free-text state values (e.g. \code{"Ba"}, \code{"Est. do Bahia"},
+\code{"Paraiba"}) match FFB state names before comparison; values that are not
+Brazilian states are ignored.
 
 \strong{Phytogeographic domains.} With \code{domains = TRUE} (default), the GBIF
 records that have coordinates - excluding those GBIF flags with geospatial issues,
@@ -139,9 +158,9 @@ such as zero coordinates or coordinates outside the stated country - are placed 
 the six Brazilian phytogeographic domains (Amazonia, Caatinga, Cerrado, Mata
 Atlantica, Pampa, Pantanal) using IBGE's biome map (2019) bundled with floraR,
 simplified to a 1 km tolerance. A domain with records but not listed for the taxon
-in FFB is a candidate new domain record. Up to \code{max_coordinates} records are
-read (300 per request); REFLORA specimens with coordinates are added when
-\code{"reflora"} is among \code{sources}. Records that fall outside the six domains
+in FFB is a candidate new domain record. Up to \code{max_coordinates} GBIF records
+are read (300 per request); the REFLORA and JABOT specimens with coordinates are
+added when those sources are queried. Records that fall outside the six domains
 (e.g. just offshore) are kept in \code{records}, with \code{Domain = NA}, but
 are never flagged nor drawn on the report's map. This
 analysis requires the \pkg{sf} package, and the map in the HTML report the
@@ -164,9 +183,9 @@ gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
 gap$domains
 gap$records[gap$records$New_domain_record_candidate, ]
 
-# Adding REFLORA herbarium specimens (requires refloraR)
-gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
-                                      sources = c("gbif", "reflora"))
+# A quick check with GBIF only
+gap_gbif <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
+                                   sources = "gbif")
 }
 
 }

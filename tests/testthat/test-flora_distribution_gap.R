@@ -22,14 +22,19 @@
 .mock_dist_ffb <- function(env = parent.frame()) {
   testthat::local_mocked_bindings(
     .flora_prepare_records = function(version, verbose, rm_flora_database) .dist_ffb_fixture(),
+    # REFLORA and JABOT are queried by default: no archives in tests, unless a
+    # test mocks them with herbarium records
+    .herbarium_records = function(source, taxon, verbose = TRUE) NULL,
     .package = "floraR",
     .env = env
   )
 }
 
 .mock_dist_gbif <- function(state_counts, found = TRUE, coordinates = NULL,
-                            env = parent.frame()) {
+                            herbaria = list(), env = parent.frame()) {
   testthat::local_mocked_bindings(
+    # REFLORA and JABOT: the records given in 'herbaria' (by source), else none
+    .herbarium_records = function(source, taxon, verbose = TRUE) herbaria[[source]],
     .gbif_plant_key = function(taxon) {
       if (found) list(key = 1L, name = taxon, kingdom = "Plantae") else NULL
     },
@@ -428,4 +433,106 @@ test_that("flora_distribution_gap renders the report with the domain map", {
   html <- paste(readLines(file.path(out_dir, "dist_map.html"), warn = FALSE), collapse = "")
   expect_match(html, "Map of Georeferenced Records", fixed = TRUE)
   expect_match(html, "leaflet", fixed = TRUE)
+})
+
+
+# ---------------------------------------------------------------------------
+# REFLORA and JABOT herbarium specimens
+# ---------------------------------------------------------------------------
+# Raw Darwin Core records, as returned by refloraR/jabotR, standardised by
+# .std_herbarium_records() (with barRoso::std_place() and std_types())
+.herbarium_fixture <- function() {
+  reflora <- data.frame(
+    collectionCode = c("ALCB", "HUEFS", "LPB"), catalogNumber = c("1", "2", "3"),
+    genus = "Luetzelburgia", specificEpithet = "auriculata",
+    scientificName = "Luetzelburgia auriculata (Allemao) Ducke",
+    country = c("Brasil", "Brasil", "Bolivia"),
+    stateProvince = c("BA", "Piaui", "Santa Cruz"),
+    municipality = NA_character_, locality = NA_character_,
+    decimalLatitude = NA, decimalLongitude = NA,
+    recordedBy = "D. Cardoso", recordNumber = c("10", "11", "12"), year = "2010",
+    typeStatus = NA_character_,
+    bibliographicCitation = paste0("Reflora Virtual Herbarium, available at: ",
+                                   "https://reflora.jbrj.gov.br/r?codigoBarra=", 1:3),
+    stringsAsFactors = FALSE)
+  jabot <- data.frame(
+    collectionCode = "RB", catalogNumber = "99",
+    genus = "Luetzelburgia", specificEpithet = "auriculata",
+    scientificName = "Luetzelburgia auriculata", country = "Brazil",
+    stateProvince = "Sergipe", municipality = "Aracaju", locality = NA_character_,
+    decimalLatitude = -10.9, decimalLongitude = -37.1,
+    recordedBy = "L.P. Queiroz", recordNumber = "5", year = "1999", typeStatus = NA_character_,
+    stringsAsFactors = FALSE)
+  list(reflora = .std_herbarium_records(reflora, "REFLORA"),
+       jabot = .std_herbarium_records(jabot, "JABOT"))
+}
+
+
+test_that(".std_herbarium_records standardises places, links, and names", {
+  h <- .herbarium_fixture()$reflora
+  expect_equal(h$Country, c("Brazil", "Brazil", "Bolivia"))
+  expect_equal(h$State[1:2], c("Bahia", "Piauí"))
+  expect_equal(h$Taxon_name, rep("Luetzelburgia auriculata", 3))
+  expect_equal(h$Institution, c("ALCB", "HUEFS", "LPB"))
+  expect_equal(h$RecordLink[1], "https://reflora.jbrj.gov.br/r?codigoBarra=1")
+})
+
+
+test_that("flora_distribution_gap combines GBIF, REFLORA, and JABOT by default", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 5), herbaria = .herbarium_fixture())
+
+  result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
+                                   html_report = FALSE, verbose = FALSE)
+  st <- result$states
+  expect_true(all(c("GBIF_records", "Reflora_records", "Jabot_records") %in% names(st)))
+  # Piaui only in REFLORA, Sergipe only in JABOT: both are candidates
+  expect_setequal(st$State[st$New_state_record_candidate],
+                  c("Piauí", "Sergipe"))
+  expect_equal(st$Reflora_records[st$State == "Bahia"], 1L)
+  expect_equal(st$Jabot_records[st$State == "Sergipe"], 1L)
+  # The Bolivian specimen is not counted
+  expect_equal(sum(st$Reflora_records), 2L)
+  # JABOT's georeferenced specimen is placed in a domain
+  expect_true("JABOT" %in% result$records$Source)
+})
+
+
+test_that("flora_distribution_gap queries only the requested herbaria", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 5), herbaria = .herbarium_fixture())
+
+  st <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", sources = "gbif",
+                               save = FALSE, html_report = FALSE, verbose = FALSE)$states
+  expect_false(any(c("Reflora_records", "Jabot_records") %in% names(st)))
+
+  st <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
+                               sources = c("gbif", "jabot"),
+                               save = FALSE, html_report = FALSE, verbose = FALSE)$states
+  expect_true("Jabot_records" %in% names(st))
+  expect_false("Reflora_records" %in% names(st))
+})
+
+
+test_that("keep_downloads = FALSE removes the REFLORA and JABOT download folders", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 5))
+  withr::local_dir(withr::local_tempdir())
+  run <- function(...) {
+    dir.create("reflora_download", showWarnings = FALSE)
+    dir.create("jabot_download", showWarnings = FALSE)
+    flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
+                           html_report = FALSE, verbose = FALSE, ...)
+  }
+
+  run()
+  expect_true(all(dir.exists(c("reflora_download", "jabot_download"))))
+
+  run(keep_downloads = FALSE)
+  expect_false(any(dir.exists(c("reflora_download", "jabot_download"))))
+
+  # Only the folders of the queried sources are removed
+  run(sources = c("gbif", "jabot"), keep_downloads = FALSE)
+  expect_true(dir.exists("reflora_download"))
+  expect_false(dir.exists("jabot_download"))
 })

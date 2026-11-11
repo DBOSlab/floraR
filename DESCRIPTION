@@ -37,6 +37,7 @@ LazyData: true
 Depends:
     R (>= 3.5.0)
 Imports:
+    barRoso,
     stringr,
     stringi,
     stats,
@@ -59,10 +60,13 @@ Suggests:
     htmltools,
     rWCVPdata,
     refloraR,
+    jabotR,
     sf,
     leaflet
 Remotes:
-    DBOSlab/refloraR
+    DBOSlab/refloraR,
+    DBOSlab/jabotR,
+    DBOSlab/barRoso
 Additional_repositories: https://matildabrown.github.io/drat
 URL:
     https://dboslab.github.io/floraR-website/,

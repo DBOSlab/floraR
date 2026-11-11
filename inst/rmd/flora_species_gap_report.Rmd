@@ -53,14 +53,14 @@ logo_path <- system.file("figures", "floraR_hex_sticker.png", package = "floraR"
 
 Species-level names in **`r taxon`** (genus) were compared against the current
 [Flora e Funga do Brasil (FFB)](https://floradobrasil.jbrj.gov.br/consulta/) checklist,
-using `r if (length(d$sources) == 2) "two independent kinds of evidence that a species occurs in Brazil" else "the following evidence that a species occurs in Brazil"`:
+using the following evidence that a species occurs in Brazil:
 
-`r paste0("- ", c(if ("POWO" %in% d$sources) "**POWO distributions** - species that [Plants of the World Online](https://powo.science.kew.org) maps in Brazil (the TDWG areas Brazil North, Northeast, West-Central, Southeast, and South);", if ("GBIF" %in% d$sources) "**GBIF type specimens** - species whose type specimens were collected in Brazil, as published by herbaria through [GBIF](https://www.gbif.org)."), collapse = "\n")`
+`r paste0("- ", c(if ("POWO" %in% d$sources) "**POWO distributions** - species that [Plants of the World Online](https://powo.science.kew.org) maps in Brazil (the TDWG areas Brazil North, Northeast, West-Central, Southeast, and South);", if ("GBIF" %in% d$sources) "**GBIF type specimens** - species whose type specimens were collected in Brazil, as published by herbaria through [GBIF](https://www.gbif.org);", if ("REFLORA" %in% d$sources) "**REFLORA type specimens** - species whose type specimens collected in Brazil are in the [Reflora Virtual Herbarium](https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/);", if ("JABOT" %in% d$sources) "**JABOT type specimens** - species whose type specimens collected in Brazil are in the herbaria hosted by [JABOT](https://jabot.jbrj.gov.br)."), collapse = "\n")`
 
 Names are compared by their *accepted* name as well as the name itself, since checklists
 disagree on which genus a species belongs to, and orthographic variants (case, hyphens,
 *-ii*/*-i* endings) are treated as the same name. Each name below is a candidate for
-inclusion in the FFB monograph of its group; `r if (length(d$sources) == 2) "names reported by **both** sources are listed first, as the strongest candidates." else "the table lists the evidence behind each one."`
+inclusion in the FFB monograph of its group; `r if (length(d$sources) > 1) "names reported by **more sources** are listed first, as the strongest candidates." else "the table lists the evidence behind each one."`
 `r if ("POWO" %in% d$sources && !isTRUE(d$brazil_filtered)) "POWO names were not filtered by distribution: names POWO places only outside Brazil are included for manual review (see the Brazil_evidence column)." else ""`
 
 **Data sources:** `r paste(d$source_lines, collapse = "; ")`.
@@ -76,13 +76,16 @@ if (!is.na(d$n_powo_names)) {
   kpi_boxes <- c(kpi_boxes, list(box("kpi-gold", d$n_powo_names,
                                      paste0("Species-level names in POWO for ", taxon))))
 }
-if (!is.na(d$n_gbif_names)) {
-  kpi_boxes <- c(kpi_boxes, list(box("kpi-gold", d$n_gbif_names,
-                                     "Names with Brazilian type specimens in GBIF")))
+for (src in c("gbif", "reflora", "jabot")) {
+  n <- d[[paste0("n_", src, "_names")]]
+  if (!is.null(n) && !is.na(n)) {
+    kpi_boxes <- c(kpi_boxes, list(box("kpi-gold", n, paste0(
+      "Names with Brazilian type specimens in ", toupper(src)))))
+  }
 }
 kpi_boxes <- c(kpi_boxes, list(box("kpi-red", d$n_missing, "Missing from FFB")))
-if (length(d$sources) == 2) {
-  kpi_boxes <- c(kpi_boxes, list(box("kpi-amber", d$n_both, "Reported by both POWO and GBIF")))
+if (length(d$sources) > 1) {
+  kpi_boxes <- c(kpi_boxes, list(box("kpi-amber", d$n_multi, "Reported by more than one source")))
 }
 do.call(htmltools::tags$div, c(class = "kpi-row", kpi_boxes))
 ```
@@ -106,6 +109,13 @@ for (col in intersect(c("POWO_URL", "IPNI_URL", "GBIF_URL"), names(tbl))) {
     ""
   )
 }
+# Several links per cell, separated by "; "
+for (col in intersect(c("REFLORA_Links", "JABOT_Links"), names(tbl))) {
+  tbl[[col]] <- vapply(strsplit(ifelse(is.na(tbl[[col]]), "", tbl[[col]]), ";\\s*"), function(u) {
+    u <- u[grepl("^https?://", u)]
+    paste0('<a href="', u, '" target="_blank">', u, '</a>', collapse = "<br>")
+  }, character(1))
+}
 
 dt <- DT::datatable(
   tbl,
@@ -128,10 +138,13 @@ dt <- DT::datatable(
                       c("10", "20", "50", "100", "All"))
   )
 )
-if (length(d$sources) == 2) {
-  dt <- DT::formatStyle(dt, "Found_in",
-                        backgroundColor = DT::styleEqual("POWO; GBIF", "#EEF6EC"),
-                        fontWeight = DT::styleEqual("POWO; GBIF", "bold"))
+if (length(d$sources) > 1) {
+  multi <- unique(tbl$Found_in[grepl(";", tbl$Found_in)])
+  if (length(multi) > 0) {
+    dt <- DT::formatStyle(dt, "Found_in",
+                          backgroundColor = DT::styleEqual(multi, rep("#EEF6EC", length(multi))),
+                          fontWeight = DT::styleEqual(multi, rep("bold", length(multi))))
+  }
 }
 dt
 ```

@@ -6,7 +6,8 @@
 \usage{
 flora_species_gap(
   taxon,
-  sources = c("powo", "gbif"),
+  sources = c("powo", "gbif", "reflora", "jabot"),
+  keep_downloads = TRUE,
   powo_source = c("rWCVPdata", "checklistbank"),
   require_brazil_evidence = TRUE,
   type_status = NULL,
@@ -25,9 +26,17 @@ flora_species_gap(
 \item{taxon}{Character. A single genus name of plants or algae (e.g.
 \code{"Myrcia"}, \code{"Gracilaria"}). Fungi are not searched.}
 
-\item{sources}{Character vector. Which kinds of evidence to use: \code{"powo"}
-(POWO distributions), \code{"gbif"} (Brazilian type specimens in GBIF), or both
-(default).}
+\item{sources}{Character vector. Which sources of evidence to use: any of
+\code{"powo"} (POWO distributions), \code{"gbif"}, \code{"reflora"}, and
+\code{"jabot"} (Brazilian type specimens in GBIF, REFLORA, and JABOT). Defaults to
+all four, combining their evidence; see Details for the requirements of each.}
+
+\item{keep_downloads}{Logical. Applies to REFLORA and JABOT. If \code{TRUE}
+(default), the herbarium archives downloaded to \code{"reflora_download"} and
+\code{"jabot_download"} in the working directory are kept, so that later runs -
+for this or other taxa - reuse them instead of downloading them again. If
+\code{FALSE}, those folders are deleted once the analysis is finished, leaving the
+working directory clean (they take several gigabytes).}
 
 \item{powo_source}{Character. Where POWO's data is read from: \code{"rWCVPdata"}
 (default; fast, local) or \code{"checklistbank"} (always current, slower). See
@@ -36,8 +45,8 @@ Details.}
 \item{require_brazil_evidence}{Logical. Applies to POWO. If \code{TRUE} (default),
 POWO names are only kept when POWO places the species in Brazil. Set to
 \code{FALSE} to also return POWO names missing from FFB regardless of distribution,
-for manual review. (GBIF names always have Brazil evidence: their types were
-collected there.)}
+for manual review. (Names from the specimen sources always have Brazil evidence:
+their types were collected there.)}
 
 \item{type_status}{Character or \code{NULL}. Applies to GBIF. Type statuses counted
 as evidence (GBIF's current vocabulary, e.g. \code{"Holotype"}, \code{"Isotype"}).
@@ -81,14 +90,15 @@ the report is only saved to \code{dir}.}
 \value{
 A \code{data.frame}, one row per species-level name in the genus that is
   absent from the current FFB checklist and reported by at least one source, sorted
-  with the names reported by both sources first. Common columns:
+  with the names reported by more sources first. Common columns:
 \describe{
   \item{Taxon_name, Authors}{The name and its author citation.}
-  \item{Accepted_name}{The accepted name (POWO's when available, else GBIF's).}
-  \item{Found_in}{Which source(s) reported the name: \code{"POWO; GBIF"},
-    \code{"POWO"}, or \code{"GBIF"}.}
+  \item{Accepted_name}{The accepted name (POWO's when available, else GBIF's;
+    for names only in REFLORA or JABOT, the name itself).}
+  \item{Found_in}{Which source(s) reported the name, e.g. \code{"POWO; GBIF; REFLORA"},
+    \code{"GBIF; JABOT"}, or \code{"POWO"}.}
   \item{Brazil_evidence}{Logical; \code{TRUE} when POWO places the species in Brazil
-    or it has Brazilian type specimens in GBIF.}
+    or it has Brazilian type specimens in GBIF, REFLORA, or JABOT.}
   \item{In_FFB}{Always \code{FALSE} (kept for clarity when combining with other tables).}
 }
 POWO columns (when \code{"powo"} is among \code{sources}; \code{NA} for names only
@@ -113,7 +123,7 @@ POWO):
   \item{GBIF_N_type_specimens, GBIF_Type_statuses}{Number of type specimens collected
     in Brazil, and their type categories.}
   \item{GBIF_Type_specimens}{Up to ten specimens as herbarium, catalogue number, and
-    type status (e.g. \code{"RB 00123 (Holotype)"}).}
+    type status (e.g. \code{"RB 00123 (holotype)"}).}
   \item{GBIF_Specimen_names}{The names the types are filed under - usually the
     typified name, e.g. the basionym of a species.}
   \item{GBIF_Collectors, GBIF_Years, GBIF_States}{Collectors, collection years, and
@@ -121,23 +131,38 @@ POWO):
   \item{GBIF_Published_in, GBIF_URL}{Protologue citation, when GBIF has it, and a link
     to the name's GBIF page.}
 }
+REFLORA and JABOT columns (when \code{"reflora"} or \code{"jabot"} is among
+\code{sources}), prefixed \code{REFLORA_} or \code{JABOT_}:
+\describe{
+  \item{N_type_specimens, Type_statuses, Type_specimens}{Number of type specimens
+    collected in Brazil, their type categories, and up to ten of them as herbarium,
+    catalogue number, and type status.}
+  \item{Collectors, Years, States}{Collectors, collection years, and Brazilian states
+    of those specimens.}
+  \item{Links}{Up to three links to the specimens' pages (REFLORA only; JABOT records
+    carry no link).}
+}
 }
 \description{
 Given a genus of plants or algae, finds the species-level names that global sources
 record for Brazil but that are not currently registered in the Flora e Funga do
 Brasil (FFB) - candidates for inclusion in the FFB monograph of the group. Two
-independent kinds of evidence are combined (see \code{sources}):
+independent kinds of evidence, from up to four sources, are combined (see
+\code{sources}):
 \itemize{
   \item \strong{POWO distributions}: species that
     \href{https://powo.science.kew.org}{Plants of the World Online} (POWO, Royal
     Botanic Gardens, Kew) maps in Brazil;
-  \item \strong{GBIF type specimens}: species whose type specimens - holotypes,
+  \item \strong{Type specimens}: species whose type specimens - holotypes,
     isotypes, lectotypes, syntypes, paratypes, and so on - were collected in Brazil,
     according to the herbaria that publish them through the
-    \href{https://www.gbif.org}{Global Biodiversity Information Facility} (GBIF).
+    \href{https://www.gbif.org}{Global Biodiversity Information Facility} (GBIF),
+    the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora
+    Virtual Herbarium}, and \href{https://jabot.jbrj.gov.br}{JABOT}.
 }
 The result is a single table, one row per name, stating which source(s) reported it:
-names reported by both are the strongest candidates. This is not a general diff of
+the more sources report a name, the stronger the candidate, and combining them
+retrieves as many gaps as possible. This is not a general diff of
 the databases: a name missing from FFB is only returned when there is evidence that
 the species occurs in Brazil.
 }
@@ -183,12 +208,30 @@ single faceted search lists every name in the genus with type specimens collecte
 Brazil; for the FFB-missing names only, the specimens themselves are then retrieved,
 many names per request, and summarised. Types are filed in GBIF under their current
 identification - usually the typified name - which \code{GBIF_Specimen_names} shows.
+
+\strong{REFLORA} (\code{"reflora"}) and \strong{JABOT} (\code{"jabot"}). The
+specimens of the genus are read with \code{\link[refloraR]{reflora_records}} and
+\code{\link[jabotR]{jabot_records}} (requiring the \pkg{refloraR} and \pkg{jabotR}
+packages), from their herbaria's Darwin Core archives: the first use downloads them -
+several gigabytes - to \code{"reflora_download"} and \code{"jabot_download"} in the
+working directory, where they are reused by later calls, and each call still takes a
+few minutes to read them. The species-level names of the specimens collected in
+Brazil that are types (any type status) are compared with FFB; as in GBIF, a
+specimen is filed under its current identification. Use \code{sources = c("powo",
+"gbif")} for a quick check.
+
+In all three specimen sources, type statuses are standardised with
+\code{barRoso::std_types()} (e.g. \code{"HOLOTYPUS"} and \code{"Holotype"} both
+become \code{"holotype"}) and places with \code{barRoso::std_place()}.
 }
 \examples{
 \dontrun{
 # Species of Myrcia recorded in Brazil by POWO and/or with Brazilian type
-# specimens in GBIF, but missing from FFB
+# specimens in GBIF, REFLORA, or JABOT, but missing from FFB
 gap <- flora_species_gap(taxon = "Myrcia")
+
+# A quick check, without the REFLORA and JABOT archives
+gap_quick <- flora_species_gap(taxon = "Myrcia", sources = c("powo", "gbif"))
 
 # POWO only, read live from ChecklistBank instead of the local WCVP copy
 gap_powo <- flora_species_gap(taxon = "Myrcia", sources = "powo",
