@@ -1639,3 +1639,33 @@
   rownames(out) <- NULL
   out
 }
+
+
+#_______________________________________________________________________________
+# The single HTML report of a *_gap() run listing the taxa for which nothing
+# new was found - so that no FFB update is needed - with what was searched
+# for each. Written to <dir>/__no_missing_species_report.html (species) or
+# <dir>/__no_new_records_report.html (distribution), only when there is at
+# least one such taxon ####
+.no_gap_file <- c(species = "__no_missing_species_report",
+                  distribution = "__no_new_records_report")
+
+.no_gap_report <- function(outs, what, sources, dir, html_report, verbose, open_report) {
+  rows <- .rbind_fill(lapply(outs, attr, "no_gap"))
+  if (!html_report || nrow(rows) == 0) return(invisible(FALSE))
+  labels <- c(powo = "POWO", gbif = "GBIF", reflora = "REFLORA", jabot = "JABOT",
+              speciesLink = "speciesLink")
+  dir <- .arg_check_dir(dir)
+  if (verbose) {
+    message("\n", nrow(rows), " taxon/taxa with nothing new for FFB, listed in ",
+            .no_gap_file[[what]], ".html")
+  }
+  .flora_render_report(template = "flora_no_gap_report.Rmd",
+                       data_list = list(what = what, sources = unname(labels[sources]),
+                                        result = rows),
+                       taxon = paste(rows[[1]], collapse = ", "),
+                       dir = dir,
+                       filename = .no_gap_file[[what]],
+                       verbose = verbose,
+                       open_report = open_report)
+}

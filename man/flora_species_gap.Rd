@@ -67,15 +67,19 @@ fetched (one request per name). With \code{"rWCVPdata"} it is always included.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
 
-\item{save}{Logical. If \code{TRUE} (default), the result of each genus is saved to
-disk as an \code{.xlsx} spreadsheet named after the genus,
-\code{flora_species_gap_<genus>.xlsx}.}
+\item{save}{Logical. If \code{TRUE} (default), the result of each genus with at
+least one species missing from FFB is saved to disk as an \code{.xlsx} spreadsheet
+named after the genus, \code{flora_species_gap_<genus>.xlsx}. Genera with nothing
+missing get no spreadsheet (see Details).}
 
 \item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_species_gap"}.}
 
 \item{html_report}{Logical. If \code{TRUE} (default), also writes a self-contained
-HTML report for each genus (\code{<dir>/flora_species_gap_<genus>.html}) summarizing the results: KPI counts and
+HTML report for each genus with missing species
+(\code{<dir>/flora_species_gap_<genus>.html}), plus a single
+\code{<dir>/__no_missing_species_report.html} listing the genera with nothing
+missing (see Details) summarizing the results: KPI counts and
 the full candidate table as a sortable, filterable \pkg{DT} widget with buttons to
 copy or download it as CSV/Excel. Requires the \pkg{rmarkdown}, \pkg{DT}, and
 \pkg{htmltools} packages; if any is missing, the report is skipped with a message
@@ -229,6 +233,15 @@ spreadsheet and HTML report are saved under its own name,
 \code{flora_species_gap_<genus>} (e.g. \code{flora_species_gap_Myrcia.xlsx}). A
 genus that fails (e.g. a misspelt name) is reported and skipped, without stopping
 the others.
+
+\strong{Genera with nothing missing.} A genus without any species missing from FFB
+needs no FFB update, so no spreadsheet or detailed report is written for it.
+Instead, all such genera of a call are listed in a single, simple HTML report,
+\code{<dir>/__no_missing_species_report.html} (written when \code{html_report =
+TRUE}), with what was searched for each - its number of species in FFB and of names
+with evidence in each source - and a conclusion: \code{"All names already in FFB -
+no update needed"}, or \code{"No names found - check the genus"} when the sources
+returned nothing at all.
 }
 \examples{
 \dontrun{

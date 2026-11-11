@@ -287,7 +287,9 @@ them instead of downloading everything again, while
 `keep_downloads = FALSE` deletes them afterwards. Give several genera in
 one call to read the archives only once for all of them: each genus is
 analysed separately and gets its own `.xlsx` spreadsheet and HTML
-report, named after it (e.g. `flora_species_gap_Myrcia.xlsx`).
+report, named after it (e.g. `flora_species_gap_Myrcia.xlsx`); genera
+with no missing species get no files, and are instead listed together in
+a single `__no_missing_species_report.html`.
 
 ``` r
 library(floraR)
@@ -327,14 +329,16 @@ key), with `sources`. Places from every source are standardised with
 the downloaded REFLORA and JABOT archives are kept for later analyses
 unless `keep_downloads = FALSE`, and several taxa can be checked in one
 call, reading the archives only once, each with its own spreadsheet and
-report (e.g. `flora_distribution_gap_Luetzelburgia_auriculata.xlsx`).
-For a genus, FFB’s distribution combines all its species; for a synonym,
-its accepted name’s distribution is used. Georeferenced records are also
-placed in the six Brazilian phytogeographic domains (using IBGE’s biome
-map), to flag candidate new domain records. The function returns three
-tables - `states`, `domains`, and `records` - and the HTML report maps
-the records over the domains and lists the individual records behind
-each candidate, so each one can be checked.
+report (e.g. `flora_distribution_gap_Luetzelburgia_auriculata.xlsx`);
+taxa with no candidate new record get no files, and are instead listed
+together in a single `__no_new_records_report.html`. For a genus, FFB’s
+distribution combines all its species; for a synonym, its accepted
+name’s distribution is used. Georeferenced records are also placed in
+the six Brazilian phytogeographic domains (using IBGE’s biome map), to
+flag candidate new domain records. The function returns three tables -
+`states`, `domains`, and `records` - and the HTML report maps the
+records over the domains and lists the individual records behind each
+candidate, so each one can be checked.
 
 ``` r
 library(floraR)

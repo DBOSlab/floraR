@@ -72,6 +72,16 @@
 #' \code{flora_distribution_gap_Luetzelburgia_auriculata.xlsx}). A taxon that fails
 #' (e.g. a misspelt name) is reported and skipped, without stopping the others.
 #'
+#' \strong{Taxa with nothing new.} A taxon without any candidate new state or domain
+#' record needs no FFB update, so no spreadsheet or detailed report is written for it.
+#' Instead, all such taxa of a call are listed in a single, simple HTML report,
+#' \code{<dir>/__no_new_records_report.html} (written when \code{html_report = TRUE}),
+#' with what was searched for each - its FFB states and domains, the number of records
+#' per source - and a conclusion: \code{"Within FFB distribution - no update needed"},
+#' or \code{"No records found - check the name"} when the databases returned nothing
+#' at all (which says nothing about the taxon's distribution). Their rows are still
+#' returned.
+#'
 #' @usage
 #' flora_distribution_gap(
 #'   taxon,
@@ -127,15 +137,19 @@
 #'
 #' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
 #'
-#' @param save Logical. If \code{TRUE} (default), the result of each taxon is saved to
-#'   disk as an \code{.xlsx} spreadsheet named after the taxon,
-#'   \code{flora_distribution_gap_<taxon>.xlsx}.
+#' @param save Logical. If \code{TRUE} (default), the result of each taxon with at
+#'   least one candidate new state or domain record is saved to disk as an \code{.xlsx}
+#'   spreadsheet named after the taxon, \code{flora_distribution_gap_<taxon>.xlsx}.
+#'   Taxa with nothing new get no spreadsheet (see Details).
 #'
 #' @param dir Character. Directory where the spreadsheets and reports are saved.
 #'   Defaults to \code{"flora_distribution_gap"}.
 #'
 #' @param html_report Logical. If \code{TRUE} (default), also writes a self-contained
-#'   HTML report for each taxon (\code{<dir>/flora_distribution_gap_<taxon>.html}) summarizing the results: KPI counts, an
+#'   HTML report for each taxon with candidates
+#'   (\code{<dir>/flora_distribution_gap_<taxon>.html}), plus a single
+#'   \code{<dir>/__no_new_records_report.html} listing the taxa with nothing new (see
+#'   Details) summarizing the results: KPI counts, an
 #'   evidence-by-source breakdown, the full state-by-state table, the domain table, an
 #'   interactive map of the georeferenced records over the phytogeographic domains
 #'   (coloured by candidate status), the records in candidate domains, and the individual
@@ -239,6 +253,8 @@ flora_distribution_gap <- function(taxon,
                             verbose = verbose, save = save, dir = dir,
                             html_report = html_report, open_report = open_report)
   })
+  .no_gap_report(outs, what = "distribution", sources = sources, dir = dir,
+                 html_report = html_report, verbose = verbose, open_report = open_report)
   if (length(outs) == 0) {
     return(list(states = .rbind_fill(list()), domains = .empty_domain_table(),
                 records = .empty_coord_records()))
@@ -378,7 +394,10 @@ flora_distribution_gap <- function(taxon,
                       New_state_record_candidate = logical(0), stringsAsFactors = FALSE)
   if (length(all_states) == 0) {
     if (verbose) message("\nNo evidence found for '", taxon, "' in the requested states or sources.")
-    return(list(states = empty, domains = .empty_domain_table(), records = .empty_coord_records()))
+    out <- list(states = empty, domains = .empty_domain_table(), records = .empty_coord_records())
+    attr(out, "no_gap") <- .distribution_no_gap_row(taxon, ffb_taxon, sources, gbif_df,
+                                                    herb_counts, splink_df, 0L)
+    return(out)
   }
 
   result <- data.frame(Taxon = taxon, State = sort(all_states), stringsAsFactors = FALSE)
@@ -482,6 +501,16 @@ flora_distribution_gap <- function(taxon,
 
   out <- list(states = result, domains = domain_table, records = coord_records)
 
+  # Nothing new for FFB: no spreadsheet or report for this taxon, only a row in
+  # the run's single no-gap report
+  if (n_new == 0 && n_new_domains == 0) {
+    if (verbose) message("  No new state or domain record: no files written for '", taxon, "'.")
+    attr(out, "no_gap") <- .distribution_no_gap_row(taxon, ffb_taxon, sources, gbif_df,
+                                                    herb_counts, splink_df,
+                                                    nrow(coord_records))
+    return(out)
+  }
+
   if (save) {
     dir <- .arg_check_dir(dir)
     .save_xlsx(out, verbose = verbose, filename = filename, dir = dir)
@@ -567,6 +596,37 @@ flora_distribution_gap <- function(taxon,
   }
 
   return(out)
+}
+
+
+# One row of the no-gap report: what was searched for a taxon without any
+# candidate new state or domain record ####
+.distribution_no_gap_row <- function(taxon, ffb_taxon, sources, gbif_df, herb_counts,
+                                     splink_df, n_georef) {
+  n_herb <- function(src) {
+    h <- herb_counts[[src]]
+    if (is.null(h)) NA_integer_ else as.integer(sum(h[[.herbarium_sources[[src]]$column]]))
+  }
+  row <- data.frame(Taxon = taxon,
+                    FFB_name = if (ffb_taxon$found) ffb_taxon$name else NA_character_,
+                    FFB_states = length(ffb_taxon$states),
+                    FFB_domains = paste(ffb_taxon$domains, collapse = ", "),
+                    stringsAsFactors = FALSE)
+  if ("gbif" %in% sources) row$GBIF_records <- as.integer(sum(gbif_df$GBIF_records))
+  if ("reflora" %in% sources) row$Reflora_records <- n_herb("reflora")
+  if ("jabot" %in% sources) row$Jabot_records <- n_herb("jabot")
+  if ("speciesLink" %in% sources) {
+    row$speciesLink_records <- as.integer(sum(splink_df$speciesLink_records))
+  }
+  row$Georeferenced_records <- as.integer(n_georef)
+  n_rec <- sum(unlist(row[intersect(c("GBIF_records", "Reflora_records", "Jabot_records",
+                                      "speciesLink_records"), names(row))]), na.rm = TRUE)
+  row$Conclusion <- if (n_rec == 0) {
+    "No records found - check the name"
+  } else {
+    "Within FFB distribution - no update needed"
+  }
+  row
 }
 
 

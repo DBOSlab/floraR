@@ -59,15 +59,19 @@ for the domain analysis. Defaults to \code{5000}.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
 
-\item{save}{Logical. If \code{TRUE} (default), the result of each taxon is saved to
-disk as an \code{.xlsx} spreadsheet named after the taxon,
-\code{flora_distribution_gap_<taxon>.xlsx}.}
+\item{save}{Logical. If \code{TRUE} (default), the result of each taxon with at
+least one candidate new state or domain record is saved to disk as an \code{.xlsx}
+spreadsheet named after the taxon, \code{flora_distribution_gap_<taxon>.xlsx}.
+Taxa with nothing new get no spreadsheet (see Details).}
 
 \item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_distribution_gap"}.}
 
 \item{html_report}{Logical. If \code{TRUE} (default), also writes a self-contained
-HTML report for each taxon (\code{<dir>/flora_distribution_gap_<taxon>.html}) summarizing the results: KPI counts, an
+HTML report for each taxon with candidates
+(\code{<dir>/flora_distribution_gap_<taxon>.html}), plus a single
+\code{<dir>/__no_new_records_report.html} listing the taxa with nothing new (see
+Details) summarizing the results: KPI counts, an
 evidence-by-source breakdown, the full state-by-state table, the domain table, an
 interactive map of the georeferenced records over the phytogeographic domains
 (coloured by candidate status), the records in candidate domains, and the individual
@@ -177,6 +181,16 @@ spreadsheet and HTML report are saved under its own name,
 \code{flora_distribution_gap_<taxon>} (e.g.
 \code{flora_distribution_gap_Luetzelburgia_auriculata.xlsx}). A taxon that fails
 (e.g. a misspelt name) is reported and skipped, without stopping the others.
+
+\strong{Taxa with nothing new.} A taxon without any candidate new state or domain
+record needs no FFB update, so no spreadsheet or detailed report is written for it.
+Instead, all such taxa of a call are listed in a single, simple HTML report,
+\code{<dir>/__no_new_records_report.html} (written when \code{html_report = TRUE}),
+with what was searched for each - its FFB states and domains, the number of records
+per source - and a conclusion: \code{"Within FFB distribution - no update needed"},
+or \code{"No records found - check the name"} when the databases returned nothing
+at all (which says nothing about the taxon's distribution). Their rows are still
+returned.
 }
 \examples{
 \dontrun{

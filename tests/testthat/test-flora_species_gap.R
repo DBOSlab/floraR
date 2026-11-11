@@ -628,3 +628,27 @@ test_that("several genera: each genus gets its own spreadsheet", {
                            save = TRUE, html_report = FALSE, dir = out_dir, verbose = FALSE)
   expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.xlsx")))
 })
+
+
+test_that("no gap: a genus with nothing missing gets only a row in the no-gap report", {
+  .mock_wcvp()
+  .mock_gbif()
+  captured <- NULL
+  testthat::local_mocked_bindings(
+    .flora_render_report = function(template, data_list, filename, ...) {
+      captured <<- list(template = template, data = data_list, filename = filename)
+    },
+    .package = "floraR"
+  )
+  # every POWO name already in FFB
+  .mock_ffb(.wcvp_fixture()$names$taxon_name)
+  out_dir <- withr::local_tempdir()
+  res <- flora_species_gap(taxon = "Luetzelburgia", sources = "powo", dir = out_dir,
+                           verbose = FALSE)
+  expect_equal(nrow(res), 0)
+  expect_length(list.files(out_dir), 0)
+  expect_equal(captured$template, "flora_no_gap_report.Rmd")
+  expect_equal(captured$filename, "__no_missing_species_report")
+  expect_equal(captured$data$result$Genus, "Luetzelburgia")
+  expect_match(captured$data$result$Conclusion, "no update needed")
+})

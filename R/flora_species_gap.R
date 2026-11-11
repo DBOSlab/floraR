@@ -89,6 +89,15 @@
 #' genus that fails (e.g. a misspelt name) is reported and skipped, without stopping
 #' the others.
 #'
+#' \strong{Genera with nothing missing.} A genus without any species missing from FFB
+#' needs no FFB update, so no spreadsheet or detailed report is written for it.
+#' Instead, all such genera of a call are listed in a single, simple HTML report,
+#' \code{<dir>/__no_missing_species_report.html} (written when \code{html_report =
+#' TRUE}), with what was searched for each - its number of species in FFB and of names
+#' with evidence in each source - and a conclusion: \code{"All names already in FFB -
+#' no update needed"}, or \code{"No names found - check the genus"} when the sources
+#' returned nothing at all.
+#'
 #' @usage
 #' flora_species_gap(
 #'   taxon,
@@ -152,15 +161,19 @@
 #'
 #' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
 #'
-#' @param save Logical. If \code{TRUE} (default), the result of each genus is saved to
-#'   disk as an \code{.xlsx} spreadsheet named after the genus,
-#'   \code{flora_species_gap_<genus>.xlsx}.
+#' @param save Logical. If \code{TRUE} (default), the result of each genus with at
+#'   least one species missing from FFB is saved to disk as an \code{.xlsx} spreadsheet
+#'   named after the genus, \code{flora_species_gap_<genus>.xlsx}. Genera with nothing
+#'   missing get no spreadsheet (see Details).
 #'
 #' @param dir Character. Directory where the spreadsheets and reports are saved.
 #'   Defaults to \code{"flora_species_gap"}.
 #'
 #' @param html_report Logical. If \code{TRUE} (default), also writes a self-contained
-#'   HTML report for each genus (\code{<dir>/flora_species_gap_<genus>.html}) summarizing the results: KPI counts and
+#'   HTML report for each genus with missing species
+#'   (\code{<dir>/flora_species_gap_<genus>.html}), plus a single
+#'   \code{<dir>/__no_missing_species_report.html} listing the genera with nothing
+#'   missing (see Details) summarizing the results: KPI counts and
 #'   the full candidate table as a sortable, filterable \pkg{DT} widget with buttons to
 #'   copy or download it as CSV/Excel. Requires the \pkg{rmarkdown}, \pkg{DT}, and
 #'   \pkg{htmltools} packages; if any is missing, the report is skipped with a message
@@ -303,6 +316,8 @@ flora_species_gap <- function(taxon,
                        max_number = max_number, verbose = verbose, save = save, dir = dir,
                        html_report = html_report, open_report = open_report)
   })
+  .no_gap_report(outs, what = "species", sources = sources, dir = dir,
+                 html_report = html_report, verbose = verbose, open_report = open_report)
   if (length(outs) == 0) return(.merge_species_candidates())
   .rbind_fill(outs)
 }
@@ -384,12 +399,33 @@ flora_species_gap <- function(taxon,
                     } else ""))
   }
 
-  if (save && nrow(result) > 0) {
+  # Nothing missing from FFB: no spreadsheet or report for this genus, only a
+  # row in the run's single no-gap report
+  if (nrow(result) == 0) {
+    n_names <- function(x) if (is.null(x)) NA_integer_ else as.integer(x$n_names)
+    row <- data.frame(Genus = taxon, FFB_species = length(ffb_genus),
+                      stringsAsFactors = FALSE)
+    if ("powo" %in% sources) row$POWO_names <- n_names(powo)
+    if ("gbif" %in% sources) row$GBIF_typified_names <- n_names(gbif)
+    if ("reflora" %in% sources) row$REFLORA_typified_names <- n_names(herbaria$reflora)
+    if ("jabot" %in% sources) row$JABOT_typified_names <- n_names(herbaria$jabot)
+    n_checked <- sum(unlist(row[grepl("_names$", names(row))]), na.rm = TRUE)
+    row$Conclusion <- if (n_checked == 0) {
+      "No names found - check the genus"
+    } else {
+      "All names already in FFB - no update needed"
+    }
+    if (verbose) message("  No species missing from FFB: no files written for '", taxon, "'.")
+    attr(result, "no_gap") <- row
+    return(result)
+  }
+
+  if (save) {
     dir <- .arg_check_dir(dir)
     .save_xlsx(result, verbose = verbose, filename = filename, dir = dir)
   }
 
-  if (html_report && nrow(result) > 0) {
+  if (html_report) {
     source_lines <- c(
       if (!is.null(powo)) {
         paste0("POWO distributions: ", if (powo_source == "rWCVPdata") {

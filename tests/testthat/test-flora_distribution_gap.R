@@ -615,3 +615,65 @@ test_that(".herbarium_subset keeps a genus or a species, and .rbind_fill fills c
   expect_equal(out$b, c("x", NA))
   expect_equal(out$c, c(NA, TRUE))
 })
+
+
+# ---------------------------------------------------------------------------
+# Taxa with nothing new for FFB
+# ---------------------------------------------------------------------------
+test_that("no gap: no spreadsheet or report, only the single no-gap report", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("DT")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc not available")
+  .mock_dist_ffb()
+  # Bahia and Pernambuco are both in FFB for auriculata: nothing new
+  .mock_dist_gbif(.gbif_counts(c("Bahia", "Pernambuco"), c(3, 2)))
+  out_dir <- withr::local_tempdir()
+
+  res <- flora_distribution_gap(taxon = c("Luetzelburgia auriculata", "Luetzelburgia bahiensis"),
+                                domains = FALSE, dir = out_dir, verbose = FALSE)
+  # bahiensis (FFB: Minas Gerais) has new states, so it keeps its own files
+  expect_setequal(list.files(out_dir),
+                  c("flora_distribution_gap_Luetzelburgia_bahiensis.xlsx",
+                    "flora_distribution_gap_Luetzelburgia_bahiensis.html",
+                    "__no_new_records_report.html"))
+  html <- paste(readLines(file.path(out_dir, "__no_new_records_report.html"), warn = FALSE),
+                collapse = "")
+  expect_match(html, "Luetzelburgia auriculata", fixed = TRUE)
+  expect_match(html, "no update needed", fixed = TRUE)
+  # the results are still returned
+  expect_true("Luetzelburgia auriculata" %in% res$states$Taxon)
+})
+
+
+test_that("no gap: the summary row tells records-within-FFB from no records at all", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts(c("Bahia", "Pernambuco"), c(3, 2)))
+  captured <- NULL
+  testthat::local_mocked_bindings(
+    .flora_render_report = function(template, data_list, ...) captured <<- data_list,
+    .package = "floraR"
+  )
+  flora_distribution_gap(taxon = "Luetzelburgia auriculata", domains = FALSE, save = FALSE,
+                         verbose = FALSE)
+  expect_equal(captured$what, "distribution")
+  expect_equal(captured$sources, c("GBIF", "REFLORA", "JABOT"))
+  row <- captured$result
+  expect_equal(row$GBIF_records, 5L)
+  expect_equal(row$FFB_states, 3L)
+  expect_match(row$Conclusion, "no update needed")
+
+  .mock_dist_gbif(.gbif_counts(character(0), integer(0)), found = FALSE)
+  flora_distribution_gap(taxon = "Luetzelburgia nonexistens", domains = FALSE, save = FALSE,
+                         verbose = FALSE)
+  expect_match(captured$result$Conclusion, "No records found")
+})
+
+
+test_that("no gap: nothing is written with html_report = FALSE", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 3))
+  out_dir <- withr::local_tempdir()
+  flora_distribution_gap(taxon = "Luetzelburgia auriculata", domains = FALSE,
+                         html_report = FALSE, dir = out_dir, verbose = FALSE)
+  expect_length(list.files(out_dir), 0)
+})
