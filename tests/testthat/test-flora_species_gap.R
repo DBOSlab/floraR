@@ -358,6 +358,7 @@ test_that("GBIF: a custom type_status is passed on", {
 
 test_that("GBIF: a genus unknown among plants and algae stops when GBIF is the only source", {
   .mock_gbif(found = FALSE)
+  .mock_ffb(character(0))
   expect_error(gap(sources = "gbif"), "not found in GBIF among plants and algae")
 })
 
@@ -480,8 +481,8 @@ test_that("returns an empty data.frame when every name is already in FFB", {
 
 
 test_that("validates its arguments", {
-  expect_error(flora_species_gap(taxon = NULL), "single character string")
-  expect_error(flora_species_gap(taxon = c("A", "B")), "single character string")
+  expect_error(flora_species_gap(taxon = NULL), "character vector")
+  expect_error(flora_species_gap(taxon = NA_character_), "character vector")
   expect_error(flora_species_gap(taxon = "A", sources = "wfo"), "should be one of")
   expect_error(flora_species_gap(taxon = "A", powo_source = "api"), "should be one of")
 })
@@ -499,11 +500,10 @@ test_that("writes a real .xlsx file and HTML report", {
   out_dir <- withr::local_tempdir()
 
   flora_species_gap(taxon = "Luetzelburgia", save = TRUE, html_report = TRUE,
-                    open_report = FALSE, dir = out_dir, filename = "species_test",
-                    verbose = FALSE)
+                    open_report = FALSE, dir = out_dir, verbose = FALSE)
 
-  expect_true(file.exists(file.path(out_dir, "species_test.xlsx")))
-  expect_true(file.exists(file.path(out_dir, "species_test.html")))
+  expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.xlsx")))
+  expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.html")))
 })
 
 
@@ -581,4 +581,50 @@ test_that("names reported by more sources are listed first", {
   expect_equal(r$Found_in[r$Taxon_name == "Luetzelburgia nova"], "REFLORA")
   expect_true(all(c("GBIF_Key", "REFLORA_Type_specimens") %in% names(r)))
   expect_false(any(grepl("^JABOT_", names(r))))
+})
+
+
+# ===========================================================================
+# Several genera in one call
+# ===========================================================================
+test_that("several genera: FFB and herbaria are read once, results stacked per genus", {
+  .mock_wcvp()
+  .mock_gbif()
+  ffb_calls <- 0
+  herb_calls <- list()
+  testthat::local_mocked_bindings(
+    .ffb_names = function(taxon, version) {
+      ffb_calls <<- ffb_calls + 1
+      list(genus = c("Luetzelburgia auriculata", "Vatairea macrocarpa"),
+           all = c("Luetzelburgia auriculata", "Vatairea macrocarpa"))
+    },
+    .herbarium_records = function(source, taxon, verbose = TRUE) {
+      herb_calls[[source]] <<- taxon
+      NULL
+    },
+    .species_gap_taxon = function(taxon, ffb, ...) {
+      ffb_genus <- ffb$genus[sub("\\s.*", "", ffb$genus) == taxon]
+      data.frame(Taxon_name = paste(taxon, "nova"), In_FFB = FALSE,
+                 N_ffb = length(ffb_genus), stringsAsFactors = FALSE)
+    },
+    .package = "floraR"
+  )
+  res <- flora_species_gap(taxon = c("Luetzelburgia", "Vatairea", "Luetzelburgia"),
+                           save = FALSE, html_report = FALSE, verbose = FALSE)
+  expect_equal(ffb_calls, 1)
+  expect_equal(herb_calls, list(reflora = c("Luetzelburgia", "Vatairea"),
+                                jabot = c("Luetzelburgia", "Vatairea")))
+  expect_equal(res$Taxon_name, c("Luetzelburgia nova", "Vatairea nova"))
+  expect_equal(res$N_ffb, c(1L, 1L))
+})
+
+
+test_that("several genera: each genus gets its own spreadsheet", {
+  .mock_wcvp()
+  .mock_gbif()
+  .mock_ffb(character(0))
+  out_dir <- withr::local_tempdir()
+  res <- flora_species_gap(taxon = c("Luetzelburgia", "Vatairea"), sources = "powo",
+                           save = TRUE, html_report = FALSE, dir = out_dir, verbose = FALSE)
+  expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.xlsx")))
 })

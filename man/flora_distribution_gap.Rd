@@ -2,7 +2,7 @@
 % Please edit documentation in R/flora_distribution_gap.R
 \name{flora_distribution_gap}
 \alias{flora_distribution_gap}
-\title{Find candidate new Brazilian state records for a plant or algal taxon}
+\title{Find candidate new Brazilian state records for plant or algal taxa}
 \usage{
 flora_distribution_gap(
   taxon,
@@ -16,14 +16,15 @@ flora_distribution_gap(
   verbose = TRUE,
   save = TRUE,
   dir = "flora_distribution_gap",
-  filename = NULL,
   html_report = TRUE,
   open_report = FALSE
 )
 }
 \arguments{
-\item{taxon}{Character. A single genus or species name of plants or algae (e.g.
-\code{"Luetzelburgia auriculata"} or \code{"Luetzelburgia"}).}
+\item{taxon}{Character vector. One or more genus or species names of plants or
+algae (e.g. \code{"Luetzelburgia auriculata"}, \code{"Luetzelburgia"}, or
+\code{c("Luetzelburgia auriculata", "Luetzelburgia bahiensis")}). Each is
+analysed separately; see Details.}
 
 \item{state}{Character vector. Optional subset of Brazilian states (full name or
 acronym) to restrict the check to. \code{NULL} (default) checks all states with any
@@ -58,17 +59,15 @@ for the domain analysis. Defaults to \code{5000}.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
 
-\item{save}{Logical. If \code{TRUE} (default), the result is saved to disk as an
-\code{.xlsx} spreadsheet.}
+\item{save}{Logical. If \code{TRUE} (default), the result of each taxon is saved to
+disk as an \code{.xlsx} spreadsheet named after the taxon,
+\code{flora_distribution_gap_<taxon>.xlsx}.}
 
-\item{dir}{Character. Directory where the spreadsheet is saved when \code{save = TRUE}.
+\item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_distribution_gap"}.}
 
-\item{filename}{Character. Name of the \code{.xlsx} file (without extension) to save.
-Defaults to \code{"flora_distribution_gap_<taxon>"}.}
-
 \item{html_report}{Logical. If \code{TRUE} (default), also writes a self-contained
-HTML report (\code{<dir>/<filename>.html}) summarizing the results: KPI counts, an
+HTML report for each taxon (\code{<dir>/flora_distribution_gap_<taxon>.html}) summarizing the results: KPI counts, an
 evidence-by-source breakdown, the full state-by-state table, the domain table, an
 interactive map of the georeferenced records over the phytogeographic domains
 (coloured by candidate status), the records in candidate domains, and the individual
@@ -83,7 +82,8 @@ browser once rendered (in interactive sessions only). Default \code{FALSE}:
 the report is only saved to \code{dir}.}
 }
 \value{
-A list of three \code{data.frame}s:
+A list of three \code{data.frame}s, each with a \code{Taxon} column; with
+  several taxa, the rows of all of them are stacked:
 \describe{
   \item{\code{states}}{One row per Brazilian state with any evidence for
     \code{taxon} (in FFB or in the queried sources): \code{Taxon}, \code{State},
@@ -107,7 +107,7 @@ With \code{save = TRUE}, each table is saved as a sheet of the \code{.xlsx}
 spreadsheet.
 }
 \description{
-Given a genus or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
+Given one or more genera or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
 the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora Virtual
 Herbarium}, \href{https://jabot.jbrj.gov.br}{JABOT}, and, optionally,
 \href{https://specieslink.net}{speciesLink} for specimen and occurrence evidence of the taxon in Brazilian states that are \emph{not} currently
@@ -145,8 +145,10 @@ evidence is combined, so that a state reported by any one of them is flagged:
 REFLORA and JABOT are read from their herbaria's Darwin Core archives: the first
 use downloads them - several gigabytes - to \code{"reflora_download"} and
 \code{"jabot_download"} in the working directory, where they are reused by later
-calls, and each call still takes a few minutes to read them. Only their specimens
-collected in Brazil are counted. Use \code{sources = "gbif"} for a quick check.
+calls. Reading them takes a few minutes, so they are read only once per call, for
+all the taxa in \code{taxon} together: checking many taxa in one call is much
+faster than one call per taxon. Only their specimens collected in Brazil are
+counted. Use \code{sources = "gbif"} for a quick check.
 The place fields of all sources are standardised with \code{barRoso::std_place()},
 so free-text state values (e.g. \code{"Ba"}, \code{"Est. do Bahia"},
 \code{"Paraiba"}) match FFB state names before comparison; values that are not
@@ -169,6 +171,12 @@ analysis requires the \pkg{sf} package, and the map in the HTML report the
 Occurrence records are evidence to review, not proof: a record in a new state may be
 a cultivated plant, a misidentification, or a georeferencing error, which is why the
 HTML report lists the individual records behind each candidate state.
+
+\strong{Several taxa.} Each taxon in \code{taxon} is analysed separately, and its
+spreadsheet and HTML report are saved under its own name,
+\code{flora_distribution_gap_<taxon>} (e.g.
+\code{flora_distribution_gap_Luetzelburgia_auriculata.xlsx}). A taxon that fails
+(e.g. a misspelt name) is reported and skipped, without stopping the others.
 }
 \examples{
 \dontrun{
@@ -182,6 +190,13 @@ gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
 # The candidate new phytogeographic domains, and the records behind them
 gap$domains
 gap$records[gap$records$New_domain_record_candidate, ]
+
+# Several species in one call: REFLORA and JABOT are read once, and each species
+# gets its own spreadsheet and report
+gap_many <- flora_distribution_gap(taxon = c("Luetzelburgia auriculata",
+                                             "Luetzelburgia bahiensis",
+                                             "Luetzelburgia praecox"))
+gap_many$states[gap_many$states$New_state_record_candidate, ]
 
 # A quick check with GBIF only
 gap_gbif <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",

@@ -1,7 +1,7 @@
-#' Find candidate new Brazilian state records for a plant or algal taxon
+#' Find candidate new Brazilian state records for plant or algal taxa
 #'
 #' @description
-#' Given a genus or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
+#' Given one or more genera or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
 #' the \href{https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/}{Reflora Virtual
 #' Herbarium}, \href{https://jabot.jbrj.gov.br}{JABOT}, and, optionally,
 #' \href{https://specieslink.net}{speciesLink} for specimen and occurrence evidence of the taxon in Brazilian states that are \emph{not} currently
@@ -39,8 +39,10 @@
 #' REFLORA and JABOT are read from their herbaria's Darwin Core archives: the first
 #' use downloads them - several gigabytes - to \code{"reflora_download"} and
 #' \code{"jabot_download"} in the working directory, where they are reused by later
-#' calls, and each call still takes a few minutes to read them. Only their specimens
-#' collected in Brazil are counted. Use \code{sources = "gbif"} for a quick check.
+#' calls. Reading them takes a few minutes, so they are read only once per call, for
+#' all the taxa in \code{taxon} together: checking many taxa in one call is much
+#' faster than one call per taxon. Only their specimens collected in Brazil are
+#' counted. Use \code{sources = "gbif"} for a quick check.
 #' The place fields of all sources are standardised with \code{barRoso::std_place()},
 #' so free-text state values (e.g. \code{"Ba"}, \code{"Est. do Bahia"},
 #' \code{"Paraiba"}) match FFB state names before comparison; values that are not
@@ -64,6 +66,12 @@
 #' a cultivated plant, a misidentification, or a georeferencing error, which is why the
 #' HTML report lists the individual records behind each candidate state.
 #'
+#' \strong{Several taxa.} Each taxon in \code{taxon} is analysed separately, and its
+#' spreadsheet and HTML report are saved under its own name,
+#' \code{flora_distribution_gap_<taxon>} (e.g.
+#' \code{flora_distribution_gap_Luetzelburgia_auriculata.xlsx}). A taxon that fails
+#' (e.g. a misspelt name) is reported and skipped, without stopping the others.
+#'
 #' @usage
 #' flora_distribution_gap(
 #'   taxon,
@@ -77,13 +85,14 @@
 #'   verbose = TRUE,
 #'   save = TRUE,
 #'   dir = "flora_distribution_gap",
-#'   filename = NULL,
 #'   html_report = TRUE,
 #'   open_report = FALSE
 #' )
 #'
-#' @param taxon Character. A single genus or species name of plants or algae (e.g.
-#'   \code{"Luetzelburgia auriculata"} or \code{"Luetzelburgia"}).
+#' @param taxon Character vector. One or more genus or species names of plants or
+#'   algae (e.g. \code{"Luetzelburgia auriculata"}, \code{"Luetzelburgia"}, or
+#'   \code{c("Luetzelburgia auriculata", "Luetzelburgia bahiensis")}). Each is
+#'   analysed separately; see Details.
 #'
 #' @param state Character vector. Optional subset of Brazilian states (full name or
 #'   acronym) to restrict the check to. \code{NULL} (default) checks all states with any
@@ -118,17 +127,15 @@
 #'
 #' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
 #'
-#' @param save Logical. If \code{TRUE} (default), the result is saved to disk as an
-#'   \code{.xlsx} spreadsheet.
+#' @param save Logical. If \code{TRUE} (default), the result of each taxon is saved to
+#'   disk as an \code{.xlsx} spreadsheet named after the taxon,
+#'   \code{flora_distribution_gap_<taxon>.xlsx}.
 #'
-#' @param dir Character. Directory where the spreadsheet is saved when \code{save = TRUE}.
+#' @param dir Character. Directory where the spreadsheets and reports are saved.
 #'   Defaults to \code{"flora_distribution_gap"}.
 #'
-#' @param filename Character. Name of the \code{.xlsx} file (without extension) to save.
-#'   Defaults to \code{"flora_distribution_gap_<taxon>"}.
-#'
 #' @param html_report Logical. If \code{TRUE} (default), also writes a self-contained
-#'   HTML report (\code{<dir>/<filename>.html}) summarizing the results: KPI counts, an
+#'   HTML report for each taxon (\code{<dir>/flora_distribution_gap_<taxon>.html}) summarizing the results: KPI counts, an
 #'   evidence-by-source breakdown, the full state-by-state table, the domain table, an
 #'   interactive map of the georeferenced records over the phytogeographic domains
 #'   (coloured by candidate status), the records in candidate domains, and the individual
@@ -142,7 +149,8 @@
 #'   browser once rendered (in interactive sessions only). Default \code{FALSE}:
 #'   the report is only saved to \code{dir}.
 #'
-#' @return A list of three \code{data.frame}s:
+#' @return A list of three \code{data.frame}s, each with a \code{Taxon} column; with
+#'   several taxa, the rows of all of them are stacked:
 #' \describe{
 #'   \item{\code{states}}{One row per Brazilian state with any evidence for
 #'     \code{taxon} (in FFB or in the queried sources): \code{Taxon}, \code{State},
@@ -183,6 +191,13 @@
 #' gap$domains
 #' gap$records[gap$records$New_domain_record_candidate, ]
 #'
+#' # Several species in one call: REFLORA and JABOT are read once, and each species
+#' # gets its own spreadsheet and report
+#' gap_many <- flora_distribution_gap(taxon = c("Luetzelburgia auriculata",
+#'                                              "Luetzelburgia bahiensis",
+#'                                              "Luetzelburgia praecox"))
+#' gap_many$states[gap_many$states$New_state_record_candidate, ]
+#'
 #' # A quick check with GBIF only
 #' gap_gbif <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
 #'                                    sources = "gbif")
@@ -203,31 +218,51 @@ flora_distribution_gap <- function(taxon,
                                    verbose = TRUE,
                                    save = TRUE,
                                    dir = "flora_distribution_gap",
-                                   filename = NULL,
                                    html_report = TRUE,
                                    open_report = FALSE) {
 
-  if (missing(taxon) || is.null(taxon) || !is.character(taxon) || length(taxon) != 1) {
-    stop("'taxon' must be a single character string (one genus or species name).",
-         call. = FALSE)
-  }
+  taxon <- .check_taxa(taxon, "genus or species name")
   sources <- match.arg(sources, c("gbif", "reflora", "jabot", "speciesLink"),
                        several.ok = TRUE)
   if (!isTRUE(keep_downloads)) {
     on.exit(.rm_herbarium_downloads(sources, verbose), add = TRUE)
   }
-  taxon <- trimws(gsub("\\s+", " ", taxon))
 
-  if (is.null(filename)) {
-    filename <- paste0("flora_distribution_gap_", gsub("\\s+", "_", taxon))
+  # FFB and the herbarium archives are read once, for all taxa
+  ffb <- .flora_prepare_records(version = version, verbose = FALSE, rm_flora_database = FALSE)
+  herb_all <- .herbarium_records_all(sources, taxon, verbose)
+
+  outs <- .run_per_taxon(taxon, verbose, function(tx) {
+    .distribution_gap_taxon(tx, state = state, sources = sources, ffb = ffb,
+                            herb_all = herb_all, specieslink_key = specieslink_key,
+                            domains = domains, max_coordinates = max_coordinates,
+                            verbose = verbose, save = save, dir = dir,
+                            html_report = html_report, open_report = open_report)
+  })
+  if (length(outs) == 0) {
+    return(list(states = .rbind_fill(list()), domains = .empty_domain_table(),
+                records = .empty_coord_records()))
   }
+  list(states = .rbind_fill(lapply(outs, `[[`, "states")),
+       domains = .rbind_fill(lapply(outs, `[[`, "domains")),
+       records = .rbind_fill(lapply(outs, `[[`, "records")))
+}
+
+
+#_______________________________________________________________________________
+# flora_distribution_gap() for one taxon, given the FFB tables ('ffb') and the
+# standardised REFLORA/JABOT records of all queried taxa ('herb_all') ####
+.distribution_gap_taxon <- function(taxon, state, sources, ffb, herb_all, specieslink_key,
+                                    domains, max_coordinates, verbose, save, dir,
+                                    html_report, open_report) {
+
+  filename <- paste0("flora_distribution_gap_", gsub("\\s+", "_", taxon))
 
   # ------------------------------------------------------------------------
   # 1. FFB's officially listed states for this taxon
   # ------------------------------------------------------------------------
   if (verbose) message("Retrieving FFB's officially listed states for '", taxon, "'...")
 
-  ffb <- .flora_prepare_records(version = version, verbose = FALSE, rm_flora_database = FALSE)
   ffb_taxon <- .ffb_taxon_states(taxon, ffb$taxon_df, ffb$distribution_df)
   ffb_states <- ffb_taxon$states
   ffb_domains <- ffb_taxon$domains
@@ -286,7 +321,7 @@ flora_distribution_gap <- function(taxon,
     herb_counts[[src]] <- stats::setNames(data.frame(character(0), integer(0),
                                                      stringsAsFactors = FALSE),
                                           c("State", column))
-    recs <- .herbarium_records(src, taxon, verbose)
+    recs <- .herbarium_subset(herb_all[[src]], taxon)
     if (is.null(recs)) next
     recs <- recs[.in_brazil(recs$Country, recs$State), , drop = FALSE]
     herb_records[[src]] <- recs
@@ -298,8 +333,8 @@ flora_distribution_gap <- function(taxon,
                                             c("State", column))
     }
     if (verbose) {
-      message("  ", nrow(recs), " Brazilian specimen(s) in ", nrow(herb_counts[[src]]),
-              " state(s).")
+      message("  ", .herbarium_sources[[src]]$label, ": ", nrow(recs),
+              " Brazilian specimen(s) in ", nrow(herb_counts[[src]]), " state(s).")
     }
   }
   herb_states <- unlist(lapply(herb_counts, `[[`, "State"), use.names = FALSE)

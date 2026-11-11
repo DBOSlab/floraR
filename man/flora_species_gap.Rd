@@ -17,14 +17,14 @@ flora_species_gap(
   verbose = TRUE,
   save = TRUE,
   dir = "flora_species_gap",
-  filename = NULL,
   html_report = TRUE,
   open_report = FALSE
 )
 }
 \arguments{
-\item{taxon}{Character. A single genus name of plants or algae (e.g.
-\code{"Myrcia"}, \code{"Gracilaria"}). Fungi are not searched.}
+\item{taxon}{Character vector. One or more genus names of plants or algae (e.g.
+\code{"Myrcia"}, \code{"Gracilaria"}, or \code{c("Myrcia", "Eugenia")}). Each
+is analysed separately; see Details. Fungi are not searched.}
 
 \item{sources}{Character vector. Which sources of evidence to use: any of
 \code{"powo"} (POWO distributions), \code{"gbif"}, \code{"reflora"}, and
@@ -67,17 +67,15 @@ fetched (one request per name). With \code{"rWCVPdata"} it is always included.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
 
-\item{save}{Logical. If \code{TRUE} (default), the result is saved to disk as an
-\code{.xlsx} spreadsheet.}
+\item{save}{Logical. If \code{TRUE} (default), the result of each genus is saved to
+disk as an \code{.xlsx} spreadsheet named after the genus,
+\code{flora_species_gap_<genus>.xlsx}.}
 
-\item{dir}{Character. Directory where the spreadsheet is saved when \code{save = TRUE}.
+\item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_species_gap"}.}
 
-\item{filename}{Character. Name of the \code{.xlsx} file (without extension) to save.
-Defaults to \code{"flora_species_gap_<taxon>"}.}
-
 \item{html_report}{Logical. If \code{TRUE} (default), also writes a self-contained
-HTML report (\code{<dir>/<filename>.html}) summarizing the results: KPI counts and
+HTML report for each genus (\code{<dir>/flora_species_gap_<genus>.html}) summarizing the results: KPI counts and
 the full candidate table as a sortable, filterable \pkg{DT} widget with buttons to
 copy or download it as CSV/Excel. Requires the \pkg{rmarkdown}, \pkg{DT}, and
 \pkg{htmltools} packages; if any is missing, the report is skipped with a message
@@ -88,8 +86,8 @@ browser once rendered (in interactive sessions only). Default \code{FALSE}:
 the report is only saved to \code{dir}.}
 }
 \value{
-A \code{data.frame}, one row per species-level name in the genus that is
-  absent from the current FFB checklist and reported by at least one source, sorted
+A \code{data.frame}, one row per species-level name in the genus (or
+  genera, stacked one after the other) that is absent from the current FFB checklist and reported by at least one source, sorted
   with the names reported by more sources first. Common columns:
 \describe{
   \item{Taxon_name, Authors}{The name and its author citation.}
@@ -144,7 +142,7 @@ REFLORA and JABOT columns (when \code{"reflora"} or \code{"jabot"} is among
 }
 }
 \description{
-Given a genus of plants or algae, finds the species-level names that global sources
+Given one or more genera of plants or algae, finds the species-level names that global sources
 record for Brazil but that are not currently registered in the Flora e Funga do
 Brasil (FFB) - candidates for inclusion in the FFB monograph of the group. Two
 independent kinds of evidence, from up to four sources, are combined (see
@@ -214,8 +212,10 @@ specimens of the genus are read with \code{\link[refloraR]{reflora_records}} and
 \code{\link[jabotR]{jabot_records}} (requiring the \pkg{refloraR} and \pkg{jabotR}
 packages), from their herbaria's Darwin Core archives: the first use downloads them -
 several gigabytes - to \code{"reflora_download"} and \code{"jabot_download"} in the
-working directory, where they are reused by later calls, and each call still takes a
-few minutes to read them. The species-level names of the specimens collected in
+working directory, where they are reused by later calls. Reading them takes a few
+minutes, so they are read only once per call, for all the genera in \code{taxon}
+together: checking many genera in one call is much faster than one call per
+genus. The species-level names of the specimens collected in
 Brazil that are types (any type status) are compared with FFB; as in GBIF, a
 specimen is filed under its current identification. Use \code{sources = c("powo",
 "gbif")} for a quick check.
@@ -223,6 +223,12 @@ specimen is filed under its current identification. Use \code{sources = c("powo"
 In all three specimen sources, type statuses are standardised with
 \code{barRoso::std_types()} (e.g. \code{"HOLOTYPUS"} and \code{"Holotype"} both
 become \code{"holotype"}) and places with \code{barRoso::std_place()}.
+
+\strong{Several genera.} Each genus in \code{taxon} is analysed separately, and its
+spreadsheet and HTML report are saved under its own name,
+\code{flora_species_gap_<genus>} (e.g. \code{flora_species_gap_Myrcia.xlsx}). A
+genus that fails (e.g. a misspelt name) is reported and skipped, without stopping
+the others.
 }
 \examples{
 \dontrun{
@@ -232,6 +238,10 @@ gap <- flora_species_gap(taxon = "Myrcia")
 
 # A quick check, without the REFLORA and JABOT archives
 gap_quick <- flora_species_gap(taxon = "Myrcia", sources = c("powo", "gbif"))
+
+# Several genera in one call: REFLORA and JABOT are read once, and each genus
+# gets its own spreadsheet and report
+gap_many <- flora_species_gap(taxon = c("Myrcia", "Eugenia", "Calyptranthes"))
 
 # POWO only, read live from ChecklistBank instead of the local WCVP copy
 gap_powo <- flora_species_gap(taxon = "Myrcia", sources = "powo",

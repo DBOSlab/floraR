@@ -256,9 +256,10 @@ test_that("flora_distribution_gap explains when FFB lists no state for the taxon
 })
 
 
-test_that("flora_distribution_gap requires a single character taxon and valid sources", {
-  expect_error(flora_distribution_gap(taxon = NULL), "single character string")
-  expect_error(flora_distribution_gap(taxon = c("A", "B")), "single character string")
+test_that("flora_distribution_gap requires a character taxon and valid sources", {
+  expect_error(flora_distribution_gap(taxon = NULL), "character vector")
+  expect_error(flora_distribution_gap(taxon = 1), "character vector")
+  expect_error(flora_distribution_gap(taxon = c("A", "")), "character vector")
   expect_error(flora_distribution_gap(taxon = "A", sources = "inaturalist"), "should be one of")
 })
 
@@ -274,11 +275,11 @@ test_that("flora_distribution_gap writes a real .xlsx file and HTML report", {
   out_dir <- withr::local_tempdir()
 
   flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = TRUE, html_report = TRUE,
-                         open_report = FALSE, dir = out_dir, filename = "dist_test",
-                         verbose = FALSE)
+                         open_report = FALSE, dir = out_dir, verbose = FALSE)
 
-  expect_true(file.exists(file.path(out_dir, "dist_test.xlsx")))
-  expect_true(file.exists(file.path(out_dir, "dist_test.html")))
+  stem <- file.path(out_dir, "flora_distribution_gap_Luetzelburgia_auriculata")
+  expect_true(file.exists(paste0(stem, ".xlsx")))
+  expect_true(file.exists(paste0(stem, ".html")))
 })
 
 
@@ -409,8 +410,9 @@ test_that("flora_distribution_gap saves the three tables as spreadsheet sheets",
   out_dir <- withr::local_tempdir()
 
   flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = TRUE, html_report = FALSE,
-                         dir = out_dir, filename = "dist_sheets", verbose = FALSE)
-  expect_equal(openxlsx::getSheetNames(file.path(out_dir, "dist_sheets.xlsx")),
+                         dir = out_dir, verbose = FALSE)
+  expect_equal(openxlsx::getSheetNames(file.path(
+    out_dir, "flora_distribution_gap_Luetzelburgia_auriculata.xlsx")),
                c("states", "domains", "records"))
 })
 
@@ -428,9 +430,10 @@ test_that("flora_distribution_gap renders the report with the domain map", {
 
   expect_no_warning(
     flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE, html_report = TRUE,
-                           open_report = FALSE, dir = out_dir, filename = "dist_map",
-                           verbose = FALSE))
-  html <- paste(readLines(file.path(out_dir, "dist_map.html"), warn = FALSE), collapse = "")
+                           open_report = FALSE, dir = out_dir, verbose = FALSE))
+  html <- paste(readLines(file.path(out_dir,
+                                    "flora_distribution_gap_Luetzelburgia_auriculata.html"),
+                          warn = FALSE), collapse = "")
   expect_match(html, "Map of Georeferenced Records", fixed = TRUE)
   expect_match(html, "leaflet", fixed = TRUE)
 })
@@ -535,4 +538,80 @@ test_that("keep_downloads = FALSE removes the REFLORA and JABOT download folders
   run(sources = c("gbif", "jabot"), keep_downloads = FALSE)
   expect_true(dir.exists("reflora_download"))
   expect_false(dir.exists("jabot_download"))
+})
+
+
+# ---------------------------------------------------------------------------
+# Several taxa in one call
+# ---------------------------------------------------------------------------
+test_that("several taxa: herbaria are queried once and results are stacked", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 1))
+  calls <- list()
+  h <- .herbarium_fixture()
+  testthat::local_mocked_bindings(
+    .herbarium_records = function(source, taxon, verbose = TRUE) {
+      calls[[length(calls) + 1]] <<- taxon
+      h[[source]]
+    },
+    .package = "floraR"
+  )
+  out_dir <- withr::local_tempdir()
+  res <- flora_distribution_gap(taxon = c("Luetzelburgia auriculata", "Luetzelburgia bahiensis",
+                                          "Luetzelburgia auriculata"),
+                                domains = FALSE, save = TRUE, html_report = FALSE,
+                                dir = out_dir, verbose = FALSE)
+
+  # one query per herbarium, with all the (unique) taxa
+  expect_length(calls, 2)
+  expect_equal(calls[[1]], c("Luetzelburgia auriculata", "Luetzelburgia bahiensis"))
+  # both taxa in one table, each with its own FFB states
+  expect_setequal(unique(res$states$Taxon), c("Luetzelburgia auriculata",
+                                               "Luetzelburgia bahiensis"))
+  bah <- res$states[res$states$Taxon == "Luetzelburgia bahiensis", ]
+  expect_true(bah$In_FFB_distribution[bah$State == "Minas Gerais"])
+  # herbarium specimens of auriculata are not counted for bahiensis
+  expect_false("Piau\u00ed" %in% bah$State[bah$Reflora_records > 0])
+  # one spreadsheet per taxon, named after it
+  expect_setequal(list.files(out_dir),
+                  c("flora_distribution_gap_Luetzelburgia_auriculata.xlsx",
+                    "flora_distribution_gap_Luetzelburgia_bahiensis.xlsx"))
+})
+
+
+test_that("several taxa: a failing taxon is skipped, not fatal", {
+  .mock_dist_ffb()
+  .mock_dist_gbif(.gbif_counts("Bahia", 1))
+  testthat::local_mocked_bindings(
+    .distribution_gap_taxon = function(taxon, ...) {
+      if (taxon == "Bad name") stop("boom")
+      list(states = data.frame(Taxon = taxon, State = "Bahia"),
+           domains = .empty_domain_table(), records = .empty_coord_records())
+    },
+    .package = "floraR"
+  )
+  expect_message(
+    res <- flora_distribution_gap(taxon = c("Bad name", "Luetzelburgia auriculata"),
+                                  save = FALSE, html_report = FALSE),
+    "Skipping 'Bad name': boom")
+  expect_equal(res$states$Taxon, "Luetzelburgia auriculata")
+  # with a single taxon, the error is not swallowed
+  expect_error(flora_distribution_gap(taxon = "Bad name", save = FALSE, html_report = FALSE,
+                                      verbose = FALSE), "boom")
+})
+
+
+test_that(".herbarium_subset keeps a genus or a species, and .rbind_fill fills columns", {
+  recs <- data.frame(Taxon_name = c("Luetzelburgia auriculata", NA, "Vatairea macrocarpa"),
+                     Identified_as = c("Luetzelburgia auriculata (Allemao) Ducke",
+                                       "Luetzelburgia sp.", "Vatairea macrocarpa"),
+                     stringsAsFactors = FALSE)
+  expect_equal(nrow(.herbarium_subset(recs, "Luetzelburgia")), 2)
+  expect_equal(nrow(.herbarium_subset(recs, "luetzelburgia auriculata")), 1)
+  expect_null(.herbarium_subset(NULL, "Luetzelburgia"))
+
+  out <- .rbind_fill(list(data.frame(a = 1, b = "x"), NULL, data.frame(a = 2, c = TRUE)))
+  expect_equal(names(out), c("a", "b", "c"))
+  expect_equal(out$b, c("x", NA))
+  expect_equal(out$c, c(NA, TRUE))
 })

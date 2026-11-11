@@ -1556,3 +1556,86 @@
   y <- range(y, na.rm = TRUE)
   if (y[1] == y[2]) as.character(y[1]) else paste(y, collapse = "-")
 }
+
+
+#_______________________________________________________________________________
+# Validate the 'taxon' argument of the *_gap() functions: a character vector
+# of one or more names, returned trimmed, with single spaces, and without
+# duplicates ####
+.check_taxa <- function(taxon, what) {
+  if (missing(taxon) || is.null(taxon) || !is.character(taxon) || length(taxon) == 0 ||
+      anyNA(taxon) || any(!nzchar(trimws(taxon)))) {
+    stop("'taxon' must be a character vector of one or more ", what, "s.", call. = FALSE)
+  }
+  unique(trimws(gsub("\\s+", " ", taxon)))
+}
+
+
+#_______________________________________________________________________________
+# Query each requested herbarium source ("reflora", "jabot") once for all the
+# taxa, so that their archives are read a single time per run. Returns a
+# list named by source, NULL for a source that could not be queried ####
+.herbarium_records_all <- function(sources, taxa, verbose = TRUE) {
+  out <- list()
+  for (src in intersect(names(.herbarium_sources), sources)) {
+    recs <- .herbarium_records(src, taxa, verbose)
+    if (!is.null(recs)) out[[src]] <- recs
+  }
+  out
+}
+
+
+#_______________________________________________________________________________
+# The records of one taxon among those standardised by .std_herbarium_records()
+# for several: a genus matches the first word of the identification, a
+# species its species-level name. NULL stays NULL (source not queried) ####
+.herbarium_subset <- function(recs, taxon) {
+  if (is.null(recs)) return(NULL)
+  if (grepl(" ", taxon)) {
+    keep <- .ffb_key(recs$Taxon_name) %in% .ffb_key(taxon)
+  } else {
+    name <- ifelse(is.na(recs$Taxon_name), recs$Identified_as, recs$Taxon_name)
+    keep <- .ffb_key(sub("\\s.*", "", trimws(name))) %in% .ffb_key(taxon)
+  }
+  recs[keep, , drop = FALSE]
+}
+
+
+#_______________________________________________________________________________
+# Run 'f' on each taxon, returning the outputs as a list named by taxon. With
+# several taxa, a failure is reported and the taxon skipped, so that one bad
+# name does not stop the whole run ####
+.run_per_taxon <- function(taxa, verbose, f) {
+  outs <- list()
+  for (i in seq_along(taxa)) {
+    tx <- taxa[i]
+    if (length(taxa) == 1) {
+      outs[[tx]] <- f(tx)
+      next
+    }
+    if (verbose) message(sprintf("\n── %s (%d/%d) ──", tx, i, length(taxa)))
+    res <- tryCatch(f(tx), error = function(e) {
+      if (verbose) message("  Skipping '", tx, "': ", conditionMessage(e))
+      NULL
+    })
+    if (!is.null(res)) outs[[tx]] <- res
+  }
+  outs
+}
+
+
+#_______________________________________________________________________________
+# rbind() data frames whose columns may differ (e.g. a source that returned
+# nothing for one taxon), filling the missing columns with NA ####
+.rbind_fill <- function(dfs) {
+  dfs <- Filter(function(d) !is.null(d) && ncol(d) > 0, dfs)
+  if (length(dfs) == 0) return(data.frame())
+  cols <- unique(unlist(lapply(dfs, names)))
+  dfs <- lapply(dfs, function(d) {
+    for (nm in setdiff(cols, names(d))) d[[nm]] <- rep(NA, nrow(d))
+    d[, cols, drop = FALSE]
+  })
+  out <- do.call(rbind, dfs)
+  rownames(out) <- NULL
+  out
+}

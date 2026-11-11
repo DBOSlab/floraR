@@ -1,7 +1,7 @@
 #' Find species that occur in Brazil but are missing from FFB
 #'
 #' @description
-#' Given a genus of plants or algae, finds the species-level names that global sources
+#' Given one or more genera of plants or algae, finds the species-level names that global sources
 #' record for Brazil but that are not currently registered in the Flora e Funga do
 #' Brasil (FFB) - candidates for inclusion in the FFB monograph of the group. Two
 #' independent kinds of evidence, from up to four sources, are combined (see
@@ -71,8 +71,10 @@
 #' \code{\link[jabotR]{jabot_records}} (requiring the \pkg{refloraR} and \pkg{jabotR}
 #' packages), from their herbaria's Darwin Core archives: the first use downloads them -
 #' several gigabytes - to \code{"reflora_download"} and \code{"jabot_download"} in the
-#' working directory, where they are reused by later calls, and each call still takes a
-#' few minutes to read them. The species-level names of the specimens collected in
+#' working directory, where they are reused by later calls. Reading them takes a few
+#' minutes, so they are read only once per call, for all the genera in \code{taxon}
+#' together: checking many genera in one call is much faster than one call per
+#' genus. The species-level names of the specimens collected in
 #' Brazil that are types (any type status) are compared with FFB; as in GBIF, a
 #' specimen is filed under its current identification. Use \code{sources = c("powo",
 #' "gbif")} for a quick check.
@@ -80,6 +82,12 @@
 #' In all three specimen sources, type statuses are standardised with
 #' \code{barRoso::std_types()} (e.g. \code{"HOLOTYPUS"} and \code{"Holotype"} both
 #' become \code{"holotype"}) and places with \code{barRoso::std_place()}.
+#'
+#' \strong{Several genera.} Each genus in \code{taxon} is analysed separately, and its
+#' spreadsheet and HTML report are saved under its own name,
+#' \code{flora_species_gap_<genus>} (e.g. \code{flora_species_gap_Myrcia.xlsx}). A
+#' genus that fails (e.g. a misspelt name) is reported and skipped, without stopping
+#' the others.
 #'
 #' @usage
 #' flora_species_gap(
@@ -95,13 +103,13 @@
 #'   verbose = TRUE,
 #'   save = TRUE,
 #'   dir = "flora_species_gap",
-#'   filename = NULL,
 #'   html_report = TRUE,
 #'   open_report = FALSE
 #' )
 #'
-#' @param taxon Character. A single genus name of plants or algae (e.g.
-#'   \code{"Myrcia"}, \code{"Gracilaria"}). Fungi are not searched.
+#' @param taxon Character vector. One or more genus names of plants or algae (e.g.
+#'   \code{"Myrcia"}, \code{"Gracilaria"}, or \code{c("Myrcia", "Eugenia")}). Each
+#'   is analysed separately; see Details. Fungi are not searched.
 #'
 #' @param sources Character vector. Which sources of evidence to use: any of
 #'   \code{"powo"} (POWO distributions), \code{"gbif"}, \code{"reflora"}, and
@@ -144,17 +152,15 @@
 #'
 #' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
 #'
-#' @param save Logical. If \code{TRUE} (default), the result is saved to disk as an
-#'   \code{.xlsx} spreadsheet.
+#' @param save Logical. If \code{TRUE} (default), the result of each genus is saved to
+#'   disk as an \code{.xlsx} spreadsheet named after the genus,
+#'   \code{flora_species_gap_<genus>.xlsx}.
 #'
-#' @param dir Character. Directory where the spreadsheet is saved when \code{save = TRUE}.
+#' @param dir Character. Directory where the spreadsheets and reports are saved.
 #'   Defaults to \code{"flora_species_gap"}.
 #'
-#' @param filename Character. Name of the \code{.xlsx} file (without extension) to save.
-#'   Defaults to \code{"flora_species_gap_<taxon>"}.
-#'
 #' @param html_report Logical. If \code{TRUE} (default), also writes a self-contained
-#'   HTML report (\code{<dir>/<filename>.html}) summarizing the results: KPI counts and
+#'   HTML report for each genus (\code{<dir>/flora_species_gap_<genus>.html}) summarizing the results: KPI counts and
 #'   the full candidate table as a sortable, filterable \pkg{DT} widget with buttons to
 #'   copy or download it as CSV/Excel. Requires the \pkg{rmarkdown}, \pkg{DT}, and
 #'   \pkg{htmltools} packages; if any is missing, the report is skipped with a message
@@ -164,8 +170,8 @@
 #'   browser once rendered (in interactive sessions only). Default \code{FALSE}:
 #'   the report is only saved to \code{dir}.
 #'
-#' @return A \code{data.frame}, one row per species-level name in the genus that is
-#'   absent from the current FFB checklist and reported by at least one source, sorted
+#' @return A \code{data.frame}, one row per species-level name in the genus (or
+#'   genera, stacked one after the other) that is absent from the current FFB checklist and reported by at least one source, sorted
 #'   with the names reported by more sources first. Common columns:
 #' \describe{
 #'   \item{Taxon_name, Authors}{The name and its author citation.}
@@ -233,6 +239,10 @@
 #' # A quick check, without the REFLORA and JABOT archives
 #' gap_quick <- flora_species_gap(taxon = "Myrcia", sources = c("powo", "gbif"))
 #'
+#' # Several genera in one call: REFLORA and JABOT are read once, and each genus
+#' # gets its own spreadsheet and report
+#' gap_many <- flora_species_gap(taxon = c("Myrcia", "Eugenia", "Calyptranthes"))
+#'
 #' # POWO only, read live from ChecklistBank instead of the local WCVP copy
 #' gap_powo <- flora_species_gap(taxon = "Myrcia", sources = "powo",
 #'                               powo_source = "checklistbank")
@@ -262,15 +272,10 @@ flora_species_gap <- function(taxon,
                               verbose = TRUE,
                               save = TRUE,
                               dir = "flora_species_gap",
-                              filename = NULL,
                               html_report = TRUE,
                               open_report = FALSE) {
 
-  if (missing(taxon) || is.null(taxon) || !is.character(taxon) || length(taxon) != 1) {
-    stop("'taxon' must be a single character string (one genus name).",
-         call. = FALSE)
-  }
-  taxon <- trimws(taxon)
+  taxon <- .check_taxa(taxon, "genus name")
   sources <- match.arg(sources, c("powo", "gbif", "reflora", "jabot"), several.ok = TRUE)
   if (!isTRUE(keep_downloads)) {
     on.exit(.rm_herbarium_downloads(sources, verbose), add = TRUE)
@@ -278,17 +283,43 @@ flora_species_gap <- function(taxon,
   powo_source <- match.arg(powo_source)
   if (is.null(type_status)) type_status <- .gbif_type_status
 
-  if (is.null(filename)) {
-    filename <- paste0("flora_species_gap_", gsub("\\s+", "_", taxon))
-  }
-
-  # ------------------------------------------------------------------------
-  # Fail fast on problems that would otherwise surface only after the
-  # (slower) FFB step: a missing rWCVPdata, or - when GBIF is the only
-  # source - a genus GBIF does not know among plants and algae
-  # ------------------------------------------------------------------------
+  # Fail fast on a missing rWCVPdata, before the (slower) FFB and herbarium
+  # steps; WCVP, FFB, and the herbarium archives are then read once, for all
+  # genera
   wcvp <- if ("powo" %in% sources && powo_source == "rWCVPdata") .wcvp_tables() else NULL
 
+  if (verbose) message("Retrieving the current FFB checklist...")
+  ffb <- tryCatch(.ffb_names(taxon, version = version), error = function(e) {
+    if (verbose) message("  Could not read the FFB checklist: ", conditionMessage(e))
+    list(genus = character(0), all = character(0))
+  })
+  herb_all <- .herbarium_records_all(sources, taxon, verbose)
+
+  outs <- .run_per_taxon(taxon, verbose, function(tx) {
+    .species_gap_taxon(tx, sources = sources, ffb = ffb, wcvp = wcvp, herb_all = herb_all,
+                       powo_source = powo_source,
+                       require_brazil_evidence = require_brazil_evidence,
+                       type_status = type_status, fetch_details = fetch_details,
+                       max_number = max_number, verbose = verbose, save = save, dir = dir,
+                       html_report = html_report, open_report = open_report)
+  })
+  if (length(outs) == 0) return(.merge_species_candidates())
+  .rbind_fill(outs)
+}
+
+
+#_______________________________________________________________________________
+# flora_species_gap() for one genus, given the FFB names of all queried genera
+# ('ffb'), the WCVP tables, and the standardised REFLORA/JABOT records of all
+# queried genera ('herb_all') ####
+.species_gap_taxon <- function(taxon, sources, ffb, wcvp, herb_all, powo_source,
+                               require_brazil_evidence, type_status, fetch_details,
+                               max_number, verbose, save, dir, html_report, open_report) {
+
+  filename <- paste0("flora_species_gap_", gsub("\\s+", "_", taxon))
+
+  # The genus in GBIF, among plants and algae (an error when GBIF is the only
+  # source and does not know the genus)
   genus <- NULL
   if ("gbif" %in% sources) {
     genus <- .gbif_genus_key(taxon)
@@ -307,13 +338,8 @@ flora_species_gap <- function(taxon,
   # ------------------------------------------------------------------------
   # 1. FFB side: names already registered (genus species + all of FFB)
   # ------------------------------------------------------------------------
-  if (verbose) message("Retrieving the current FFB checklist for '", taxon, "'...")
-
-  ffb <- tryCatch(.ffb_names(taxon, version = version), error = function(e) {
-    if (verbose) message("  Could not read the FFB checklist: ", conditionMessage(e))
-    list(genus = character(0), all = character(0))
-  })
-  if (verbose && length(ffb$genus) == 0) {
+  ffb_genus <- ffb$genus[.ffb_key(sub("\\s.*", "", ffb$genus)) == .ffb_key(taxon)]
+  if (verbose && length(ffb_genus) == 0) {
     message("  No species of '", taxon, "' found in the current FFB checklist ",
             "(treating FFB's known species list as empty).")
   }
@@ -334,7 +360,7 @@ flora_species_gap <- function(taxon,
   }
   herbaria <- list()
   for (src in intersect(c("reflora", "jabot"), sources)) {
-    recs <- .herbarium_records(src, taxon, verbose)
+    recs <- .herbarium_subset(herb_all[[src]], taxon)
     if (!is.null(recs)) {
       herbaria[[src]] <- .herbarium_species_candidates(recs, taxon, ffb_keys,
                                                        .herbarium_sources[[src]]$label,
@@ -385,7 +411,7 @@ flora_species_gap <- function(taxon,
                   if (!is.null(herbaria$reflora)) "REFLORA",
                   if (!is.null(herbaria$jabot)) "JABOT"),
       source_lines = source_lines,
-      n_in_ffb = length(ffb$genus),
+      n_in_ffb = length(ffb_genus),
       n_powo_names = if (is.null(powo)) NA_integer_ else powo$n_names,
       n_gbif_names = if (is.null(gbif)) NA_integer_ else gbif$n_names,
       n_reflora_names = if (is.null(herbaria$reflora)) NA_integer_ else herbaria$reflora$n_names,
