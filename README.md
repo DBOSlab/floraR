@@ -30,11 +30,13 @@ But `floraR` is designed to do more than retrieve data from FFB: it is
 meant to help taxonomists expand the current FFB monographs. By
 cross-checking FFB against global resources - the species distributions
 of [Plants of the World Online](https://powo.science.kew.org) and the
-type specimens collected in Brazil that herbaria publish through
-[GBIF](https://www.gbif.org) - it points to species that are recorded in
-Brazil but not yet treated in FFB, giving specialists a concrete
-starting point for bringing each monograph closer to a complete account
-of the Brazilian flora.
+specimens collected in Brazil that herbaria publish through
+[GBIF](https://www.gbif.org), the [Reflora Virtual
+Herbarium](https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/),
+and [JABOT](https://jabot.jbrj.gov.br) - it points to species that are
+recorded in Brazil but not yet treated in FFB, giving specialists a
+concrete starting point for bringing each monograph closer to a complete
+account of the Brazilian flora.
 
 The package is designed to streamline both data exploration for
 researchers and data curation workflows for taxonomic experts
@@ -67,6 +69,15 @@ Plants (it is not on CRAN):
 install.packages("rWCVPdata",
                  repos = c("https://matildabrown.github.io/drat",
                            "https://cloud.r-project.org"))
+```
+
+To use REFLORA and JABOT herbarium specimens in `flora_species_gap()`
+and `flora_distribution_gap()`, also install
+[refloraR](https://github.com/DBOSlab/refloraR) and
+[jabotR](https://github.com/DBOSlab/jabotR):
+
+``` r
+remotes::install_github(c("DBOSlab/refloraR", "DBOSlab/jabotR"))
 ```
 
 ``` r
@@ -252,22 +263,39 @@ For a genus of plants or algae, list the species-level names that occur
 in Brazil but that FFB does not register yet, from two independent kinds
 of evidence: the species distributions of [Plants of the World Online
 (POWO)](https://powo.science.kew.org), and type specimens collected in
-Brazil that herbaria publish through [GBIF](https://www.gbif.org). The
-result is one table, one row per name, with a `Found_in` column: names
-reported by both sources are listed first, as the strongest candidates.
-Names that FFB holds under a different genus or spelling are recognised,
-so they are not reported as missing. POWO’s data is read locally from
-`rWCVPdata` by default (fast), or live from ChecklistBank with
-`powo_source = "checklistbank"`; each GBIF name comes with a summary of
-its Brazilian type specimens. The result is also saved as an `.xlsx`
-spreadsheet and an HTML report.
+Brazil from three collection databases - [GBIF](https://www.gbif.org),
+the [Reflora Virtual
+Herbarium](https://floradobrasil.jbrj.gov.br/reflora/herbarioVirtual/)
+(via [refloraR](https://github.com/DBOSlab/refloraR)), and
+[JABOT](https://jabot.jbrj.gov.br) (via
+[jabotR](https://github.com/DBOSlab/jabotR)). All four sources are
+queried by default, and their results are merged to retrieve as many
+gaps as possible: the result is one table, one row per name, with a
+`Found_in` column (e.g. `"POWO; GBIF; REFLORA"`), and the names reported
+by more sources are listed first, as the strongest candidates. Type
+statuses and places are standardised with
+[barRoso](https://github.com/DBOSlab/barRoso)’s `std_types()` and
+`std_place()`. Names that FFB holds under a different genus or spelling
+are recognised, so they are not reported as missing. POWO’s data is read
+locally from `rWCVPdata` by default (fast), or live from ChecklistBank
+with `powo_source = "checklistbank"`; each name comes with a summary of
+its Brazilian type specimens in each specimen source. REFLORA and JABOT
+are read from their herbaria’s archives, downloaded once (several
+gigabytes) to `reflora_download/` and `jabot_download/`: with
+`keep_downloads = TRUE` (default) they are kept, so later analyses reuse
+them instead of downloading everything again, while
+`keep_downloads = FALSE` deletes them afterwards. The result is also
+saved as an `.xlsx` spreadsheet and an HTML report.
 
 ``` r
 library(floraR)
 
 # Species of Myrcia recorded in Brazil by POWO and/or with Brazilian type
-# specimens in GBIF, but missing from FFB
+# specimens in GBIF, REFLORA, or JABOT, but missing from FFB
 gap <- flora_species_gap(taxon = "Myrcia")
+
+# A quick check, without the REFLORA and JABOT archives
+gap_quick <- flora_species_gap(taxon = "Myrcia", sources = c("powo", "gbif"))
 
 # POWO only, read live from ChecklistBank instead of the local WCVP copy
 gap_powo <- flora_species_gap(taxon = "Myrcia", sources = "powo",
@@ -282,18 +310,24 @@ gap_algae <- flora_species_gap(taxon = "Gracilaria", sources = "gbif")
 For a genus or species of plants or algae, compare the Brazilian states
 where specimens have been recorded against the states officially listed
 in its FFB distribution, and flag the states not yet in FFB as candidate
-new state records. Occurrences come from [GBIF](https://www.gbif.org) by
-default - in a single request, with GBIF’s free-text state names
-normalised - and optionally from REFLORA herbarium specimens (via
-[refloraR](https://github.com/DBOSlab/refloraR)) and
-[speciesLink](https://specieslink.net) (with a free API key). For a
-genus, FFB’s distribution combines all its species; for a synonym, its
-accepted name’s distribution is used. Georeferenced records are also
-placed in the six Brazilian phytogeographic domains (using IBGE’s biome
-map), to flag candidate new domain records. The function returns three
-tables - `states`, `domains`, and `records` - and the HTML report maps
-the records over the domains and lists the individual records behind
-each candidate, so each one can be checked.
+new state records. Specimens come from three collection databases by
+default - [GBIF](https://www.gbif.org) (in a single request), REFLORA
+herbarium specimens (via
+[refloraR](https://github.com/DBOSlab/refloraR)), and JABOT (via
+[jabotR](https://github.com/DBOSlab/jabotR)) - and their evidence is
+merged, so that a state reported by any of them is flagged; choose among
+them, or add [speciesLink](https://specieslink.net) (with a free API
+key), with `sources`. Places from every source are standardised with
+[barRoso](https://github.com/DBOSlab/barRoso)’s `std_place()`. As above,
+the downloaded REFLORA and JABOT archives are kept for later analyses
+unless `keep_downloads = FALSE`. For a genus, FFB’s distribution
+combines all its species; for a synonym, its accepted name’s
+distribution is used. Georeferenced records are also placed in the six
+Brazilian phytogeographic domains (using IBGE’s biome map), to flag
+candidate new domain records. The function returns three tables -
+`states`, `domains`, and `records` - and the HTML report maps the
+records over the domains and lists the individual records behind each
+candidate, so each one can be checked.
 
 ``` r
 library(floraR)
@@ -307,9 +341,10 @@ gap$domains   # phytogeographic domains, new domain candidates flagged
 gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
                                  state = c("Pernambuco", "Paraiba"))
 
-# Adding Reflora herbarium specimens (requires refloraR)
-gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
-                                      sources = c("gbif", "reflora"))
+# A quick check with GBIF only, or delete the REFLORA and JABOT archives afterwards
+gap_gbif <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", sources = "gbif")
+gap_clean <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
+                                    keep_downloads = FALSE)
 ```
 
 ## Data Curation Workflow
@@ -317,7 +352,7 @@ gap_reflora <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
 `floraR` also supports taxonomic experts in curating and updating Flora
 e Funga do Brasil records. The package facilitates integration of new
 species names and records from global biodiversity repositories such as
-IPNI, Plants of the World Online (POWO), Reflora, and GBIF.
+IPNI, Plants of the World Online (POWO), Reflora, JABOT, and GBIF.
 
 `flora_get_descriptions()` reads the controlled-field and free-text
 descriptions from FFB taxon pages, and `flora_build_matrix()` turns them
@@ -352,9 +387,9 @@ mat_free <- flora_build_matrix(descriptions[[2]])     # organs
 - Taxonomic Hierarchy: Retrieve child taxa at any rank, from class down
   to species
 - Gap Analysis: Find species that Plants of the World Online records in
-  Brazil, or whose type specimens were collected in Brazil (GBIF), but
-  that are still missing from FFB, and candidate new state records from
-  specimen evidence
+  Brazil, or whose type specimens were collected in Brazil (GBIF,
+  REFLORA, JABOT), but that are still missing from FFB, and candidate
+  new state and domain records from specimen evidence
 - Data Cleaning: Automated parsing and standardization of DwC-A fields
 - Taxonomic Workflows: Tools for data curation and integration with
   global repositories
