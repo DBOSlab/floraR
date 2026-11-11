@@ -22,8 +22,10 @@ jobs:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
           # leaflet (Suggests) needs raster -> terra, which does not build on
-          # R-devel at the moment; the report-map test skips without it
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', skip-pkgs: 'leaflet=?ignore'}
+          # R-devel at the moment; the report-map test skips without it.
+          # jabotR (Suggests) imports leaflet, so it is skipped too (the tests
+          # mock the REFLORA/JABOT queries)
+          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', skip-pkgs: 'leaflet=?ignore jabotR=?ignore'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
 
