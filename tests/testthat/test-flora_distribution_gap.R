@@ -117,6 +117,70 @@ test_that(".ffb_taxon_states reports a taxon absent from FFB", {
 })
 
 
+# A homonym: "Dyckia meziana" is both an accepted name and (listed first) a
+# synonym of another accepted species, as in the real FFB data
+.homonym_ffb_fixture <- function(status = TRUE) {
+  taxon_df <- data.frame(
+    id = c("20", "21", "22", "23"),
+    taxonName = c("Dyckia", "Dyckia meziana", "Dyckia meziana", "Dyckia encholirioides"),
+    genus = "Dyckia",
+    taxonomicStatus = c("NOME_ACEITO", "SINONIMO", "NOME_ACEITO", "NOME_ACEITO"),
+    acceptedNameUsageID = c(NA, "23", NA, NA),
+    stringsAsFactors = FALSE
+  )
+  if (!status) taxon_df$taxonomicStatus <- NULL
+  distribution_df <- data.frame(
+    id = c("22", "23"),
+    locationID = c("BR-MS", "BR-SC"),
+    phytogeographicDomain = c("Cerrado", "Mata Atl\u00e2ntica"),
+    stringsAsFactors = FALSE
+  )
+  list(taxon_df = taxon_df, distribution_df = distribution_df, speciesprofile_df = data.frame())
+}
+
+
+test_that(".ffb_prefer_accepted picks the accepted row among homonyms", {
+  f <- .homonym_ffb_fixture()
+  expect_equal(.ffb_prefer_accepted(c(2L, 3L), f$taxon_df), 3L)
+  # without taxonomicStatus, a row with no acceptedNameUsageID counts as accepted
+  expect_equal(.ffb_prefer_accepted(c(2L, 3L), .homonym_ffb_fixture(status = FALSE)$taxon_df), 3L)
+  # only synonyms: the first row is kept (and later redirected to its accepted name)
+  expect_equal(.ffb_prefer_accepted(2L, f$taxon_df), 2L)
+  expect_true(is.na(.ffb_prefer_accepted(integer(0), f$taxon_df)))
+})
+
+
+test_that(".ffb_taxon_states uses the accepted row of a homonym, not the synonym", {
+  f <- .homonym_ffb_fixture()
+  res <- .ffb_taxon_states("Dyckia meziana", f$taxon_df, f$distribution_df)
+  expect_equal(res$name, "Dyckia meziana")
+  expect_equal(res$states, "Mato Grosso do Sul")
+  expect_equal(res$domains, "Cerrado")
+
+  f2 <- .homonym_ffb_fixture(status = FALSE)
+  res2 <- .ffb_taxon_states("Dyckia meziana", f2$taxon_df, f2$distribution_df)
+  expect_equal(res2$states, "Mato Grosso do Sul")
+})
+
+
+test_that("flora_distribution_gap does not flag an FFB state of a homonym as new", {
+  testthat::local_mocked_bindings(
+    .flora_prepare_records = function(version, verbose, rm_flora_database) .homonym_ffb_fixture(),
+    .herbarium_records = function(source, taxon, verbose = TRUE) NULL,
+    .package = "floraR"
+  )
+  .mock_dist_gbif(.gbif_counts("Mato Grosso do Sul", 4))
+
+  result <- flora_distribution_gap(taxon = "Dyckia meziana", save = FALSE,
+                                   html_report = FALSE, verbose = FALSE)$states
+
+  ms <- result[result$state == "Mato Grosso do Sul", ]
+  expect_true(ms$in_ffb_distribution)
+  expect_false(ms$new_state_record_candidate)
+  expect_false("Santa Catarina" %in% result$state[result$in_ffb_distribution])
+})
+
+
 # ---------------------------------------------------------------------------
 # flora_distribution_gap()
 # ---------------------------------------------------------------------------

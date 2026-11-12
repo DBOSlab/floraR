@@ -211,7 +211,8 @@ flora_get_children_taxa <- function(taxon_name = NULL,
                  taxon_name, rank), call. = FALSE)
   }
 
-  parent_taxon <- ffb_taxa[parent_rows[1], ]
+  # Prefer an accepted row when the name also occurs as a homonym synonym
+  parent_taxon <- ffb_taxa[.ffb_prefer_accepted(parent_rows, ffb_taxa), ]
   parent_id <- parent_taxon$id
 
   if (verbose) {

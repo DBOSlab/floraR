@@ -364,6 +364,27 @@
 
 
 #_______________________________________________________________________________
+# Pick one row among several FFB rows matching the same name. A taxonName can
+# occur both as an accepted name and as a homonym synonym pointing to another
+# accepted name; the accepted row (taxonomicStatus NOME_ACEITO, or - when that
+# column is absent - a row without an acceptedNameUsageID other than its own
+# id) is preferred, falling back to the first row only when none is accepted.
+# Returns a single row index, or NA_integer_ when 'rows' is empty. ####
+.ffb_prefer_accepted <- function(rows, taxon_df) {
+  if (length(rows) == 0L) return(NA_integer_)
+  if (length(rows) == 1L) return(rows[1L])
+  acc <- integer(0)
+  if ("taxonomicStatus" %in% names(taxon_df)) {
+    acc <- rows[taxon_df$taxonomicStatus[rows] %in% "NOME_ACEITO"]
+  } else if ("acceptedNameUsageID" %in% names(taxon_df)) {
+    aid <- as.character(taxon_df$acceptedNameUsageID[rows])
+    acc <- rows[is.na(aid) | !nzchar(aid) | aid == as.character(taxon_df$id[rows])]
+  }
+  if (length(acc) > 0L) acc[1L] else rows[1L]
+}
+
+
+#_______________________________________________________________________________
 # Resolve a single taxon row index to its accepted name and ID. ####
 # id_lookup is a list mapping FFB id strings to row positions in taxon_df.
 .flora_resolve_accepted <- function(row_idx, taxon_df, id_lookup) {
@@ -566,8 +587,7 @@
 
     if (length(rows) > 1L) {
       homonyms[i] <- TRUE
-      acc_idx <- rows[taxon_df$taxonomicStatus[rows] == "NOME_ACEITO"]
-      chosen <- if (length(acc_idx) > 0L) acc_idx[1L] else rows[1L]
+      chosen <- .ffb_prefer_accepted(rows, taxon_df)
     } else {
       chosen <- rows[1L]
     }
@@ -1492,7 +1512,9 @@
   if (length(rows) == 0) {
     return(list(found = FALSE, name = taxon, states = character(0), domains = character(0)))
   }
-  row <- rows[1]
+  # A taxonName can be both an accepted name and a homonym synonym of another
+  # accepted name (e.g. Dyckia meziana): prefer the accepted row
+  row <- .ffb_prefer_accepted(rows, taxon_df)
   name <- taxon
   if ("acceptedNameUsageID" %in% names(taxon_df) &&
       !is.na(taxon_df$acceptedNameUsageID[row]) &&
