@@ -819,12 +819,12 @@ flora_distribution_gap <- function(taxon,
 
     list(kind = "heading", x = "Example (fictitious records)"),
     list(kind = "table", x = data.frame(
-      state = c("Piauí", "Piauí", "Piauí", "Piauí", "Pará", "Pará"),
+      state = c("Piau\u00ed", "Piau\u00ed", "Piau\u00ed", "Piau\u00ed", "Par\u00e1", "Par\u00e1"),
       catalogNumber = c("XX0000001", "XX0000002", "XX0000003", "XX0000004", "XX0000005", "XX0000006"),
       scientificName = rep("Genus exemplaris", 6),
       validation = c("incorrect", "uncertain", "correct", "", "uncertain", ""),
       comments = c("Misidentified: it is Genus alterus", "Sterile; image too poor to confirm", "",
-                   "(not reviewed: Piauí already has a voucher)",
+                   "(not reviewed: Piau\u00ed already has a voucher)",
                    "Possibly an undescribed species - needs further study", "(not reviewed yet)"),
       stringsAsFactors = FALSE)),
 
