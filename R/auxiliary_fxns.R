@@ -9,6 +9,77 @@
 
 
 #_______________________________________________________________________________
+# Locale independence. In a session whose locale is not UTF-8 (e.g. Rscript
+# run from a shell with LANG unset, i.e. the C locale), base R and stringi
+# treat strings without an encoding mark as ASCII/native: accented values such
+# as "Goi\u00e1s" returned by barRoso, refloraR and jabotR as unmarked UTF-8
+# bytes then fail to match (or make gsub() error), and the gap results change.
+# The exported functions that read and match these values call
+# .use_utf8_locale() first, which switches LC_CTYPE to a UTF-8 locale until the
+# calling function exits, and pass their result through .utf8() so that no
+# unmarked UTF-8 string leaks back into the user's non-UTF-8 session. ####
+.utf8_locales <- c("C.UTF-8", "en_US.UTF-8", "C.utf8", "en_US.utf8", "UTF-8",
+                   "English_United States.utf8")
+
+.use_utf8_locale <- function(envir = parent.frame()) {
+  if (isTRUE(l10n_info()[["UTF-8"]])) return(invisible(FALSE))
+  old <- Sys.getlocale("LC_CTYPE")
+  for (loc in .utf8_locales) {
+    if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", loc))) &&
+        isTRUE(l10n_info()[["UTF-8"]])) {
+      restore <- substitute(invisible(suppressWarnings(Sys.setlocale("LC_CTYPE", old))),
+                            list(old = old))
+      do.call(on.exit, list(restore, add = TRUE), envir = envir)
+      return(invisible(TRUE))
+    }
+  }
+  invisible(suppressWarnings(Sys.setlocale("LC_CTYPE", old)))
+  warning("R is running in a non-UTF-8 locale (", old, ") and no UTF-8 locale ",
+          "could be set: accented names (e.g. Brazilian states) may not match, so ",
+          "results can differ from a UTF-8 session. Start R with a UTF-8 locale, ",
+          "e.g. LANG=en_US.UTF-8.", call. = FALSE)
+  invisible(FALSE)
+}
+
+# Mark every unmarked string that is valid UTF-8 as UTF-8 (recursing into
+# lists and data frames, keeping their attributes); other unmarked strings are
+# taken as native and converted to UTF-8. A no-op for marked or ASCII strings.
+.utf8 <- function(x) {
+  if (is.list(x)) {
+    x[] <- lapply(x, .utf8)
+    for (a in setdiff(names(attributes(x)), c("names", "row.names", "class"))) {
+      attr(x, a) <- .utf8(attr(x, a))
+    }
+    return(x)
+  }
+  if (!is.character(x)) return(x)
+  unk <- !is.na(x) & Encoding(x) == "unknown"
+  if (any(unk)) {
+    ok <- unk & validUTF8(x)
+    Encoding(x[ok]) <- "UTF-8"
+    bad <- unk & !ok
+    if (any(bad)) x[bad] <- enc2utf8(x[bad])
+  }
+  x
+}
+
+# Locale-independent text ordering. sort() and order() follow LC_COLLATE, so
+# e.g. "Rio Grande do Norte" sorts before "Rio de Janeiro" in the C locale but
+# after it in en_US.UTF-8. These use ICU's English collation (via stringi)
+# whatever the session's locale: .coll_key() gives ranks for order() (NA
+# stays NA), .sort_text() sorts like sort(), dropping NAs
+.coll_key <- function(x) {
+  stringi::stri_rank(as.character(x),
+                     opts_collator = stringi::stri_opts_collator(locale = "en_US"))
+}
+
+.sort_text <- function(x) {
+  x <- x[!is.na(x)]
+  x[order(.coll_key(x))]
+}
+
+
+#_______________________________________________________________________________
 # Function to filter occurrence data ####
 .filter_occur_df <- function(occur_df, taxon, state, verbose) {
 
@@ -836,7 +907,7 @@
   collapse <- function(ids, keep) {
     if (!any(keep)) return(stats::setNames(character(0), character(0)))
     tapply(dist$label[keep], dist$plant_name_id[keep],
-           function(x) paste(sort(unique(x)), collapse = "; "))
+           function(x) paste(.sort_text(unique(x)), collapse = "; "))
   }
   all_areas <- collapse(dist$plant_name_id, rep(TRUE, nrow(dist)))
   br_areas <- collapse(dist$plant_name_id,
@@ -1012,8 +1083,8 @@
 
   is_br <- codes %in% names(.tdwg_brazil)
   list(found = TRUE,
-       areas = paste(sort(labels), collapse = "; "),
-       brazil = if (any(is_br)) paste(sort(labels[is_br]), collapse = "; ") else NA_character_)
+       areas = paste(.sort_text(labels), collapse = "; "),
+       brazil = if (any(is_br)) paste(.sort_text(labels[is_br]), collapse = "; ") else NA_character_)
 }
 
 
@@ -1251,15 +1322,21 @@
 # do/da/de ..." and "State of ..." prefixes, and "Brasilia" for the Federal
 # District. Values that are not a Brazilian state are returned as NA. ####
 .normalize_br_state <- function(x) {
-  states <- c("Acre" = "AC", "Alagoas" = "AL", "Amap\u00e1" = "AP", "Amazonas" = "AM",
-              "Bahia" = "BA", "Cear\u00e1" = "CE", "Distrito Federal" = "DF",
-              "Esp\u00edrito Santo" = "ES", "Goi\u00e1s" = "GO", "Maranh\u00e3o" = "MA",
-              "Mato Grosso" = "MT", "Mato Grosso do Sul" = "MS", "Minas Gerais" = "MG",
-              "Par\u00e1" = "PA", "Para\u00edba" = "PB", "Paran\u00e1" = "PR", "Pernambuco" = "PE",
-              "Piau\u00ed" = "PI", "Rio de Janeiro" = "RJ", "Rio Grande do Norte" = "RN",
-              "Rio Grande do Sul" = "RS", "Rond\u00f4nia" = "RO", "Roraima" = "RR",
-              "Santa Catarina" = "SC", "S\u00e3o Paulo" = "SP", "Sergipe" = "SE",
-              "Tocantins" = "TO")
+  # State names as values, not as c() argument names: argument names become
+  # symbols, translated to the native encoding when the code is parsed, which
+  # turns "Goi\u00e1s" into "Goi<U+00E1>s" in a non-UTF-8 locale
+  states <- stats::setNames(
+    c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+      "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+      "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+    c("Acre", "Alagoas", "Amap\u00e1", "Amazonas", "Bahia",
+      "Cear\u00e1", "Distrito Federal", "Esp\u00edrito Santo",
+      "Goi\u00e1s", "Maranh\u00e3o", "Mato Grosso",
+      "Mato Grosso do Sul", "Minas Gerais", "Par\u00e1",
+      "Para\u00edba", "Paran\u00e1", "Pernambuco", "Piau\u00ed",
+      "Rio de Janeiro", "Rio Grande do Norte",
+      "Rio Grande do Sul", "Rond\u00f4nia", "Roraima",
+      "Santa Catarina", "S\u00e3o Paulo", "Sergipe", "Tocantins"))
   key <- function(s) {
     s <- tolower(stringi::stri_trans_general(s, "Latin-ASCII"))
     s <- gsub("^\\s*(est\\.?|estado|state)\\s+(do|da|de|of)\\s+", "", s)
@@ -1436,8 +1513,8 @@
   states <- .normalize_br_state(loc)
   dom <- distribution_df$phytogeographicDomain[distribution_df$id %in% ids]
   domains <- .br_domain_names[match(.ffb_key(dom), .ffb_key(.br_domain_names))]
-  list(found = TRUE, name = name, states = sort(unique(states[!is.na(states)])),
-       domains = sort(unique(domains[!is.na(domains)])))
+  list(found = TRUE, name = name, states = .sort_text(unique(states)),
+       domains = .sort_text(unique(domains)))
 }
 
 

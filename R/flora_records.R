@@ -237,6 +237,7 @@ flora_records <- function(taxon = NULL,
                           dir = "flora_records",
                           filename = "flora_records_search") {
 
+  .use_utf8_locale()
   ffb <- .flora_prepare_records(version = version,
                                 verbose = verbose,
                                 rm_flora_database = rm_flora_database)
@@ -375,7 +376,7 @@ flora_records <- function(taxon = NULL,
     .save_csv(records, verbose = verbose, filename = filename, dir = dir)
   }
 
-  return(records)
+  return(.utf8(records))
 }
 
 
@@ -410,7 +411,7 @@ flora_records <- function(taxon = NULL,
   value <- trimws(as.character(value))
   keep <- id %in% ids & !is.na(value) & nzchar(value)
   d <- unique(data.frame(id = id[keep], value = value[keep], stringsAsFactors = FALSE))
-  d <- d[order(d$id, stringi::stri_trans_general(d$value, "Latin-ASCII")), ]
+  d <- d[order(d$id, .coll_key(stringi::stri_trans_general(d$value, "Latin-ASCII"))), ]
   joined <- vapply(split(d$value, d$id), paste, character(1), collapse = sep)
   unname(joined[as.character(ids)])
 }

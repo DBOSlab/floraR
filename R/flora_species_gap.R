@@ -314,6 +314,7 @@ flora_species_gap <- function(taxon,
                               html_report = TRUE,
                               open_report = FALSE) {
 
+  .use_utf8_locale()
   taxon <- .check_taxa(taxon, "genus name")
   sources <- match.arg(sources, c("powo", "gbif", "reflora", "jabot"), several.ok = TRUE)
   if (!isTRUE(keep_downloads)) {
@@ -345,7 +346,7 @@ flora_species_gap <- function(taxon,
   .no_gap_report(outs, what = "species", sources = sources, dir = dir,
                  html_report = html_report, verbose = verbose, open_report = open_report)
   if (length(outs) == 0) return(.merge_species_candidates())
-  .rbind_fill(outs)
+  .utf8(.rbind_fill(outs))
 }
 
 
@@ -795,7 +796,7 @@ flora_species_gap <- function(taxon,
 
   cols <- c(common, "Found_in", "Brazil_evidence",
             unlist(.species_gap_columns[names(tabs)], use.names = FALSE), "In_FFB")
-  m <- m[order(-rowSums(inside), m$Taxon_name), intersect(cols, names(m)), drop = FALSE]
+  m <- m[order(-rowSums(inside), .coll_key(m$Taxon_name)), intersect(cols, names(m)), drop = FALSE]
   rownames(m) <- NULL
   m
 }

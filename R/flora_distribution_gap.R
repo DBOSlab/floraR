@@ -257,6 +257,7 @@ flora_distribution_gap <- function(taxon,
                                    html_report = TRUE,
                                    open_report = FALSE) {
 
+  .use_utf8_locale()
   taxon <- .check_taxa(taxon, "genus or species name")
   sources <- match.arg(sources, c("gbif", "reflora", "jabot", "speciesLink"),
                        several.ok = TRUE)
@@ -282,9 +283,9 @@ flora_distribution_gap <- function(taxon,
                                      domains = .empty_domain_table(),
                                      records = .empty_coord_records())))
   }
-  list(states = .rbind_fill(lapply(outs, `[[`, "states")),
-       domains = .rbind_fill(lapply(outs, `[[`, "domains")),
-       records = .rbind_fill(lapply(outs, `[[`, "records")))
+  .utf8(list(states = .rbind_fill(lapply(outs, `[[`, "states")),
+             domains = .rbind_fill(lapply(outs, `[[`, "domains")),
+             records = .rbind_fill(lapply(outs, `[[`, "records"))))
 }
 
 
@@ -423,7 +424,7 @@ flora_distribution_gap <- function(taxon,
     return(.distribution_output(out))
   }
 
-  result <- data.frame(Taxon = taxon, State = sort(all_states), stringsAsFactors = FALSE)
+  result <- data.frame(Taxon = taxon, State = .sort_text(all_states), stringsAsFactors = FALSE)
   result$In_FFB_distribution <- result$State %in% ffb_states
   fill <- function(df, col) {
     v <- df[[col]][match(result$State, df$State)]
@@ -701,7 +702,8 @@ flora_distribution_gap <- function(taxon,
   }
   if (nrow(coords) == 0) return(coords)
   coords <- coords[order(!coords$New_state_record_candidate, !coords$New_domain_record_candidate,
-                         coords$State, coords$Domain, coords$Source, na.last = TRUE), , drop = FALSE]
+                         .coll_key(coords$State), .coll_key(coords$Domain),
+                         .coll_key(coords$Source), na.last = TRUE), , drop = FALSE]
   rownames(coords) <- NULL
   coords
 }

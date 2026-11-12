@@ -90,15 +90,22 @@
 # Check the state input
 .arg_check_state <- function(x, return_abbrev = FALSE) {
 
-  valid_states <- c("Acre" = "AC", "Alagoas" = "AL", "Amap\u00e1" = "AP", "Amazonas" = "AM",
-                    "Bahia" = "BA", "Cear\u00e1" = "CE", "Distrito Federal" = "DF",
-                    "Esp\u00edrito Santo" = "ES", "Goi\u00e1s" = "GO", "Maranh\u00e3o" = "MA",
-                    "Mato Grosso" = "MT", "Mato Grosso do Sul" = "MS", "Minas Gerais" = "MG",
-                    "Par\u00e1" = "PA", "Para\u00edba" = "PB", "Paran\u00e1" = "PR", "Pernambuco" = "PE",
-                    "Piau\u00ed" = "PI", "Rio de Janeiro" = "RJ", "Rio Grande do Norte" = "RN",
-                    "Rio Grande do Sul" = "RS", "Rond\u00f4nia" = "RO", "Roraima" = "RR",
-                    "Santa Catarina" = "SC", "S\u00e3o Paulo" = "SP", "Sergipe" = "SE",
-                    "Tocantins" = "TO")
+  # State names as values, not as c() argument names: argument names become
+  # symbols, translated to the native encoding when the code is parsed, which
+  # turns "Goi\u00e1s" into "Goi<U+00E1>s" in a non-UTF-8 locale
+  valid_states <- stats::setNames(
+    c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+      "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+      "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"),
+    c("Acre", "Alagoas", "Amap\u00e1", "Amazonas", "Bahia",
+      "Cear\u00e1", "Distrito Federal",
+      "Esp\u00edrito Santo", "Goi\u00e1s", "Maranh\u00e3o",
+      "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais",
+      "Par\u00e1", "Para\u00edba", "Paran\u00e1",
+      "Pernambuco", "Piau\u00ed", "Rio de Janeiro",
+      "Rio Grande do Norte", "Rio Grande do Sul",
+      "Rond\u00f4nia", "Roraima", "Santa Catarina",
+      "S\u00e3o Paulo", "Sergipe", "Tocantins"))
 
   valid_states_full <- names(valid_states)
   valid_states_acronyms <- unname(valid_states)
