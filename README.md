@@ -289,7 +289,11 @@ one call to read the archives only once for all of them: each genus is
 analysed separately and gets its own `.xlsx` spreadsheet and HTML
 report, named after it (e.g. `flora_species_gap_Myrcia.xlsx`); genera
 with no missing species get no files, and are instead listed together in
-a single `__no_missing_species_report.html`.
+a single `__no_missing_species_report.html`. Each spreadsheet is ready
+for a specialist to validate the names: a first `instructions` sheet
+explains what to do, and a `validation` column (`correct`, `incorrect`,
+or `uncertain`, from a drop-down list) and an optional `comments` column
+close the table.
 
 ``` r
 library(floraR)
@@ -338,7 +342,16 @@ the six Brazilian phytogeographic domains (using IBGE’s biome map), to
 flag candidate new domain records. The function returns three tables -
 `states`, `domains`, and `records` - and the HTML report maps the
 records over the domains and lists the individual records behind each
-candidate, so each one can be checked.
+candidate, so each one can be checked. The spreadsheet is ready for a
+specialist to validate the candidates: a first `instructions` sheet
+explains that the goal is to find at least one voucher specimen per
+candidate new state or domain - not to check every record - and the
+`records` sheet ends with a `validation` column (`correct`, `incorrect`,
+or `uncertain`, from a drop-down list) and an optional `comments`
+column, with counters of the vouchers validated per candidate. Fields
+from the source databases keep their original Darwin Core names
+(e.g. `recordedBy`, `decimalLatitude`), and the columns created by
+floraR are in lower case.
 
 ``` r
 library(floraR)
