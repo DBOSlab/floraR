@@ -808,7 +808,7 @@ flora_distribution_gap <- function(taxon,
     txt("Please do not rename the sheets or the columns - the counters depend on them.", gap = TRUE),
 
     list(kind = "heading", x = "Terms for the column validation (the same three words for every record)"),
-    list(kind = "terms", x = data.frame(
+    list(kind = "terms", id = "validation", x = data.frame(
       validation = c(.validation_terms),
       meaning = c("You checked the specimen: the identification is right and the specimen was collected in that state/domain. It is a voucher for the new record.",
                   "You checked the specimen: it is misidentified, or its locality or coordinates are wrong. It does not support the record.",

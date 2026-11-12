@@ -246,14 +246,27 @@ returned nothing at all.
 
 \strong{Validating the spreadsheet.} The spreadsheet is meant to be reviewed by a
 specialist of the group. Its first sheet, \code{instructions}, explains what to do,
-and the candidates are in the \code{species} sheet, which ends with two columns for
-the specialist: \code{validation}, filled in from a drop-down list with
-\code{"correct"} (an accepted species occurring in Brazil, to be added to FFB),
-\code{"incorrect"} (e.g. a synonym of a name already in FFB, or not in Brazil), or
-\code{"uncertain"} (checked, but impossible to decide yet), and left empty for
-names not reviewed; and \code{comments}, optional free text. The
-\code{instructions} sheet counts the names reviewed and validated, updated by Excel
-as the names are reviewed. The sheet has filters on its header, and the header row
+and the candidates are in the \code{species} sheet, which ends with four columns for
+the specialist, each but the last filled in from a drop-down list:
+\itemize{
+  \item \code{validation}: \code{"correct"} (the name should be added to FFB, as an
+    accepted name or a synonym), \code{"incorrect"} (it should not, e.g. the species
+    does not occur in Brazil), or \code{"uncertain"} (checked, but impossible to
+    decide yet); left empty for names not reviewed;
+  \item \code{taxonomicStatus}: the name's status in FFB's own terms,
+    \code{"NOME_ACEITO"} or \code{"SINONIMO"};
+  \item \code{nomenclaturalStatus}: also in FFB's terms - \code{"NOME_CORRETO"},
+    \code{"NOME_LEGITIMO_MAS_INCORRETO"}, \code{"NOME_CORRETO_VIA_CONSERVACAO"},
+    \code{"VARIANTE_ORTOGRAFICA"}, \code{"NOME_ILEGITIMO"},
+    \code{"NOME_NAO_EFETIVAMENTE_PUBLICADO"},
+    \code{"NOME_NAO_VALIDAMENTE_PUBLICADO"}, \code{"NOME_APLICACAO_INCERTA"},
+    \code{"NOME_REJEITADO"}, or \code{"NOME_MAL_APLICADO"};
+  \item \code{comments}: optional free text (e.g. the accepted name of a
+    \code{"SINONIMO"}).
+}
+The two status columns are filled in for every name validated as
+\code{"correct"}. The \code{instructions} sheet explains every term, and counts
+the names reviewed and validated, updated by Excel as the names are reviewed. The sheet has filters on its header, and the header row
 and the name column stay frozen while scrolling.
 }
 \examples{

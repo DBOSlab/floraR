@@ -100,14 +100,27 @@
 #'
 #' \strong{Validating the spreadsheet.} The spreadsheet is meant to be reviewed by a
 #' specialist of the group. Its first sheet, \code{instructions}, explains what to do,
-#' and the candidates are in the \code{species} sheet, which ends with two columns for
-#' the specialist: \code{validation}, filled in from a drop-down list with
-#' \code{"correct"} (an accepted species occurring in Brazil, to be added to FFB),
-#' \code{"incorrect"} (e.g. a synonym of a name already in FFB, or not in Brazil), or
-#' \code{"uncertain"} (checked, but impossible to decide yet), and left empty for
-#' names not reviewed; and \code{comments}, optional free text. The
-#' \code{instructions} sheet counts the names reviewed and validated, updated by Excel
-#' as the names are reviewed. The sheet has filters on its header, and the header row
+#' and the candidates are in the \code{species} sheet, which ends with four columns for
+#' the specialist, each but the last filled in from a drop-down list:
+#' \itemize{
+#'   \item \code{validation}: \code{"correct"} (the name should be added to FFB, as an
+#'     accepted name or a synonym), \code{"incorrect"} (it should not, e.g. the species
+#'     does not occur in Brazil), or \code{"uncertain"} (checked, but impossible to
+#'     decide yet); left empty for names not reviewed;
+#'   \item \code{taxonomicStatus}: the name's status in FFB's own terms,
+#'     \code{"NOME_ACEITO"} or \code{"SINONIMO"};
+#'   \item \code{nomenclaturalStatus}: also in FFB's terms - \code{"NOME_CORRETO"},
+#'     \code{"NOME_LEGITIMO_MAS_INCORRETO"}, \code{"NOME_CORRETO_VIA_CONSERVACAO"},
+#'     \code{"VARIANTE_ORTOGRAFICA"}, \code{"NOME_ILEGITIMO"},
+#'     \code{"NOME_NAO_EFETIVAMENTE_PUBLICADO"},
+#'     \code{"NOME_NAO_VALIDAMENTE_PUBLICADO"}, \code{"NOME_APLICACAO_INCERTA"},
+#'     \code{"NOME_REJEITADO"}, or \code{"NOME_MAL_APLICADO"};
+#'   \item \code{comments}: optional free text (e.g. the accepted name of a
+#'     \code{"SINONIMO"}).
+#' }
+#' The two status columns are filled in for every name validated as
+#' \code{"correct"}. The \code{instructions} sheet explains every term, and counts
+#' the names reviewed and validated, updated by Excel as the names are reviewed. The sheet has filters on its header, and the header row
 #' and the name column stay frozen while scrolling.
 #'
 #' @usage
@@ -790,20 +803,25 @@ flora_species_gap <- function(taxon,
 
 #_______________________________________________________________________________
 # Save one genus' flora_species_gap() spreadsheet: an instructions sheet for
-# the specialist, then the candidate names, with the 'validation' and
-# 'comments' columns at the end ####
+# the specialist, then the candidate names, closed by the specialist's columns:
+# 'validation', the name's FFB 'taxonomicStatus' and 'nomenclaturalStatus'
+# (drop-down lists of FFB's own values), and 'comments' ####
+.species_review_cols <- c("validation", "taxonomicStatus", "nomenclaturalStatus", "comments")
+
 .save_species_spreadsheet <- function(result, taxon, filename, dir, verbose) {
-  cols <- c(names(result), "validation", "comments")
-  val <- .xl_range("species", cols, "validation", nrow(result))
+  cols <- c(names(result), .species_review_cols)
+  rng <- function(col) .xl_range("species", cols, col, nrow(result))
   progress <- data.frame(
     what = c("Names missing from FFB (candidates)", "Names reviewed (validation filled in)",
-             "  correct - to be added to FFB", "  incorrect", "  uncertain"),
-    value = c(as.character(nrow(result)), sprintf("COUNTA(%s)", val),
-              sprintf('COUNTIF(%s,"%s")', val, .validation_terms)),
+             "  correct - to be added to FFB", "  incorrect", "  uncertain",
+             "Names with taxonomicStatus NOME_ACEITO", "Names with taxonomicStatus SINONIMO"),
+    value = c(as.character(nrow(result)), sprintf("COUNTA(%s)", rng("validation")),
+              sprintf('COUNTIF(%s,"%s")', rng("validation"), .validation_terms),
+              sprintf('COUNTIF(%s,"%s")', rng("taxonomicStatus"), .ffb_taxonomic_status)),
     stringsAsFactors = FALSE)
   .write_spreadsheet(sheets = list(species = result), filename = filename, dir = dir,
                      verbose = verbose, help = .species_help(taxon, progress),
-                     validate_sheet = "species",
+                     validate_sheet = "species", review_cols = .species_review_cols,
                      link_cols = c("POWO_URL", "IPNI_URL", "GBIF_URL"))
 }
 
@@ -817,33 +835,60 @@ flora_species_gap <- function(taxon,
     txt(paste0("Spreadsheet written by floraR::flora_species_gap() on ", Sys.Date(),
                ": the species-level names that the sources queried record for Brazil but that the")),
     txt("Flora e Funga do Brasil (FFB) does not list yet - one row per name.", gap = TRUE),
-    txt("GOAL: decide, for each name, whether the species should be added to FFB. You do NOT need to check every"),
-    txt("type specimen: one reliable specimen or source showing that the species is accepted and occurs in Brazil is enough.", gap = TRUE),
+    txt("GOAL: decide, for each name, whether it should be added to FFB, and with which taxonomic and nomenclatural status."),
+    txt("You do NOT need to check every type specimen: one reliable specimen or source is enough to decide.", gap = TRUE),
 
     list(kind = "heading", x = "What to do"),
     txt("1. In the species sheet, read the name (Taxon_name, Accepted_name) and the evidence (Found_in, and the POWO, GBIF, REFLORA, JABOT columns)."),
     txt("2. Open the links (POWO_URL, IPNI_URL, GBIF_URL, REFLORA_Links) to see the protologue, the distribution and the type specimens."),
-    txt("3. In validation, choose correct, incorrect or uncertain from the drop-down list (see the terms below)."),
-    txt("4. Move on to the next name. Leave validation EMPTY for the names you did not look at: every filled cell counts as a reviewed name."),
+    txt("3. In validation, choose correct, incorrect or uncertain from the drop-down list."),
+    txt("4. For every name validated as correct, choose its taxonomicStatus and its nomenclaturalStatus from the drop-down lists,"),
+    txt("   using FFB's own terms (tables below). For a SINONIMO, write its accepted name in comments."),
+    txt("   For incorrect or uncertain names, fill them in only if you know them."),
+    txt("5. Move on to the next name. Leave validation EMPTY for the names you did not look at: every filled cell counts as a reviewed name."),
     txt("Please do not rename the sheet or the columns - the counters depend on them.", gap = TRUE),
 
     list(kind = "heading", x = "Terms for the column validation (the same three words for every name)"),
-    list(kind = "terms", x = data.frame(
+    list(kind = "terms", id = "validation", x = data.frame(
       validation = .validation_terms,
-      meaning = c("You checked the name: it is an accepted species that occurs in Brazil and is not a synonym of a name already in FFB. It should be added to FFB.",
-                  "You checked the name: it should not be added (e.g. a synonym of a name in FFB, not in Brazil, a misapplied or doubtful name).",
+      meaning = c("You checked the name: it applies to a plant occurring in Brazil and should be added to FFB - as an accepted name or as a synonym (say which in taxonomicStatus).",
+                  "You checked the name: it should not be added (e.g. the species does not occur in Brazil, the evidence rests on misidentified specimens, or FFB already has it under another spelling).",
                   "You checked the name but cannot decide yet (e.g. unclear synonymy, type not seen, needs a specialist of the group)."),
       stringsAsFactors = FALSE)),
-    txt("An empty cell means: not reviewed."),
+    txt("An empty cell means: not reviewed.", gap = TRUE),
+
+    list(kind = "heading", x = "Terms for the column taxonomicStatus (as in FFB)"),
+    list(kind = "terms", id = "taxonomicStatus", x = data.frame(
+      taxonomicStatus = .ffb_taxonomic_status,
+      meaning = c("Accepted name: the name you accept for the species.",
+                  "Synonym: the species is accepted under another name - write that accepted name in comments."),
+      stringsAsFactors = FALSE)),
+    txt("", gap = FALSE),
+
+    list(kind = "heading", x = "Terms for the column nomenclaturalStatus (as in FFB)"),
+    list(kind = "terms", id = "nomenclaturalStatus", x = data.frame(
+      nomenclaturalStatus = .ffb_nomenclatural_status,
+      meaning = c("Correct name: legitimate, and the correct name for the taxon.",
+                  "Legitimate but incorrect: a legitimate name that is not the correct one for the taxon (e.g. a later heterotypic synonym).",
+                  "Correct via conservation: a conserved name (nom. cons.).",
+                  "Orthographic variant: a spelling variant of another name.",
+                  "Illegitimate name (nom. illeg.), e.g. a later homonym or a superfluous name.",
+                  "Not effectively published.",
+                  "Not validly published (nom. inval., including nom. nud.).",
+                  "Name of uncertain application (nom. dub.).",
+                  "Rejected name (nom. rej.).",
+                  "Misapplied name: used for this species in error (auct. non)."),
+      stringsAsFactors = FALSE)),
     txt("The column comments is OPTIONAL and free text - fill it in only if you have something to add.", gap = TRUE),
 
     list(kind = "heading", x = "Example (fictitious names)"),
     list(kind = "table", x = data.frame(
-      Taxon_name = c("Genus exemplaris", "Genus alterus", "Genus dubius", "Genus novus"),
-      Found_in = c("POWO; GBIF; REFLORA", "POWO", "GBIF", "REFLORA"),
-      validation = c("correct", "incorrect", "uncertain", ""),
-      comments = c("", "Synonym of Genus primus, already in FFB",
-                   "Type not seen; possibly the same as Genus exemplaris", "(not reviewed yet)"),
+      Taxon_name = c("Genus exemplaris", "Genus alterus", "Genus dubius", "Genus extraneus", "Genus novus"),
+      validation = c("correct", "correct", "uncertain", "incorrect", ""),
+      taxonomicStatus = c("NOME_ACEITO", "SINONIMO", "", "", ""),
+      nomenclaturalStatus = c("NOME_CORRETO", "NOME_LEGITIMO_MAS_INCORRETO", "", "", ""),
+      comments = c("", "Accepted name: Genus primus", "Type not seen; possibly the same as Genus exemplaris",
+                   "Known only from Peru; the Brazilian record is a misidentification", "(not reviewed yet)"),
       stringsAsFactors = FALSE)),
 
     list(kind = "heading", x = "Progress (updates by itself)"),

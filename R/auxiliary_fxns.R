@@ -546,22 +546,32 @@
 # spreadsheets (offered as a drop-down list); an empty cell = not reviewed ####
 .validation_terms <- c("correct", "incorrect", "uncertain")
 
+# FFB's own vocabularies (taxon.txt), for the specialist to state the
+# taxonomic and nomenclatural status of a name missing from FFB ####
+.ffb_taxonomic_status <- c("NOME_ACEITO", "SINONIMO")
+.ffb_nomenclatural_status <- c("NOME_CORRETO", "NOME_LEGITIMO_MAS_INCORRETO",
+                               "NOME_CORRETO_VIA_CONSERVACAO", "VARIANTE_ORTOGRAFICA",
+                               "NOME_ILEGITIMO", "NOME_NAO_EFETIVAMENTE_PUBLICADO",
+                               "NOME_NAO_VALIDAMENTE_PUBLICADO", "NOME_APLICACAO_INCERTA",
+                               "NOME_REJEITADO", "NOME_MAL_APLICADO")
+
 
 #_______________________________________________________________________________
 # Write the *_gap() spreadsheets: an optional 'instructions' sheet first, then
 # one sheet per data.frame of 'sheets'. Every data sheet has a bold header with
 # filters, frozen panes on the header row and the first (taxon) column, and
 # column widths fitted to its header and content. The sheet named
-# 'validate_sheet' gets two extra columns at the end, 'validation' (a
-# drop-down of .validation_terms) and 'comments' (optional free text), for the
-# specialist who reviews the candidates. 'formula_cols' adds Excel formula
+# 'validate_sheet' gets extra, empty columns at the end for the specialist who
+# reviews the candidates, named by 'review_cols' (default 'validation' and
+# 'comments'); those whose name is also the id of a "terms" block of 'help'
+# get a drop-down list of that block's values. 'formula_cols' adds Excel formula
 # columns after the data: a named list (by sheet) of named lists (by column)
 # of formula strings, one per row. Columns named in 'link_cols' are written as
 # clickable hyperlinks. 'help' is a list of blocks for the instructions sheet
 # (see .write_help_sheet()). ####
 .write_spreadsheet <- function(sheets, filename, dir, verbose = TRUE, help = NULL,
-                               validate_sheet = NULL, formula_cols = list(),
-                               link_cols = character(0)) {
+                               validate_sheet = NULL, review_cols = c("validation", "comments"),
+                               formula_cols = list(), link_cols = character(0)) {
 
   if (!dir.exists(dir)) {
     dir.create(dir, recursive = TRUE)
@@ -578,15 +588,14 @@
   review_style <- openxlsx::createStyle(textDecoration = "bold", fgFill = "#FFE699",
                                         border = "Bottom")
 
-  terms_ref <- NULL
-  if (!is.null(help)) terms_ref <- .write_help_sheet(wb, help)
+  list_refs <- list()
+  if (!is.null(help)) list_refs <- .write_help_sheet(wb, help)
 
   for (nm in names(sheets)) {
     data <- as.data.frame(sheets[[nm]], stringsAsFactors = FALSE)
     review <- identical(nm, validate_sheet)
     if (review) {
-      data$validation <- rep(NA_character_, nrow(data))
-      data$comments <- rep(NA_character_, nrow(data))
+      for (rc in review_cols) data[[rc]] <- rep(NA_character_, nrow(data))
     }
     for (lc in intersect(link_cols, names(data))) {
       x <- as.character(data[[lc]])
@@ -610,11 +619,13 @@
     col_names <- c(names(data), names(fcols))
 
     if (review) {
-      cols <- match(c("validation", "comments"), col_names)
+      cols <- match(review_cols, col_names)
       openxlsx::addStyle(wb, sheet = nm, style = review_style, rows = 1, cols = cols)
-      if (nrow(data) > 0 && !is.null(terms_ref)) {
-        openxlsx::dataValidation(wb, sheet = nm, cols = cols[1], rows = 1 + seq_len(nrow(data)),
-                                 type = "list", value = terms_ref)
+      for (rc in intersect(review_cols, names(list_refs))) {
+        if (nrow(data) == 0) break
+        openxlsx::dataValidation(wb, sheet = nm, cols = match(rc, col_names),
+                                 rows = 1 + seq_len(nrow(data)), type = "list",
+                                 value = list_refs[[rc]])
       }
     }
 
@@ -642,10 +653,11 @@
 # The 'instructions' sheet of a *_gap() spreadsheet, written from a list of
 # blocks, each list(kind, x): kind "title", "heading" or "text" (x: a string,
 # one row each), "table" (x: a data.frame, written with a bold header),
-# "terms" (x: a data.frame whose first column is .validation_terms - its cells
-# feed the drop-down list of the 'validation' column), or "formulas" (x: a
-# data.frame of labels and Excel formulas). Returns the sheet reference of the
-# validation terms, for openxlsx::dataValidation(). ####
+# "terms" (x: a data.frame whose first column lists the allowed values of a
+# reviewer column, named by the block's 'id' - its cells feed that column's
+# drop-down list), or "formulas" (x: a data.frame of labels and Excel
+# formulas). Returns the sheet references of the "terms" blocks, named by id,
+# for openxlsx::dataValidation(). ####
 .write_help_sheet <- function(wb, blocks) {
   sh <- "instructions"
   openxlsx::addWorksheet(wb, sh, gridLines = FALSE)
@@ -660,7 +672,7 @@
                                  border = "Bottom", borderColour = "#D9D9D9")
   )
   row <- 1
-  terms_ref <- NULL
+  refs <- list()
   for (b in blocks) {
     if (b$kind %in% c("title", "heading", "text")) {
       openxlsx::writeData(wb, sh, x = b$x, startCol = 1, startRow = row)
@@ -688,13 +700,13 @@
                            gridExpand = TRUE)
         openxlsx::setRowHeights(wb, sh, rows = row + seq_len(n), heights = 30)
         openxlsx::addStyle(wb, sh, styles$term, rows = row + seq_len(n), cols = 1)
-        terms_ref <- sprintf("'%s'!$A$%d:$A$%d", sh, row + 1, row + n)
+        refs[[b$id]] <- sprintf("'%s'!$A$%d:$A$%d", sh, row + 1, row + n)
       }
       row <- row + n + 2
     }
   }
-  openxlsx::setColWidths(wb, sh, cols = 1:5, widths = c(38, 22, 30, 14, 52))
-  terms_ref
+  openxlsx::setColWidths(wb, sh, cols = 1:5, widths = c(44, 22, 30, 32, 52))
+  refs
 }
 
 

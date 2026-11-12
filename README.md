@@ -291,9 +291,11 @@ report, named after it (e.g. `flora_species_gap_Myrcia.xlsx`); genera
 with no missing species get no files, and are instead listed together in
 a single `__no_missing_species_report.html`. Each spreadsheet is ready
 for a specialist to validate the names: a first `instructions` sheet
-explains what to do, and a `validation` column (`correct`, `incorrect`,
-or `uncertain`, from a drop-down list) and an optional `comments` column
-close the table.
+explains what to do, and the table is closed by the specialist’s
+columns: `validation` (`correct`, `incorrect`, or `uncertain`), the
+name’s `taxonomicStatus` (`NOME_ACEITO`, `SINONIMO`) and
+`nomenclaturalStatus` (`NOME_CORRETO`, `NOME_ILEGITIMO`, …) in FFB’s own
+terms - all from drop-down lists - and an optional `comments` column.
 
 ``` r
 library(floraR)

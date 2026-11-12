@@ -507,7 +507,17 @@ test_that("writes a real .xlsx file and HTML report", {
   expect_equal(openxlsx::getSheetNames(xl), c("instructions", "species"))
   sp <- openxlsx::read.xlsx(xl, sheet = "species")
   expect_equal(names(sp)[1], "Taxon_name")
-  expect_equal(tail(names(sp), 2), c("validation", "comments"))
+  expect_equal(tail(names(sp), 4),
+               c("validation", "taxonomicStatus", "nomenclaturalStatus", "comments"))
+  # Drop-down lists of the validation terms and of FFB's own status values
+  xml_dir <- withr::local_tempdir()
+  utils::unzip(xl, exdir = xml_dir)
+  sheet <- paste(readLines(file.path(xml_dir, "xl", "worksheets", "sheet2.xml"), warn = FALSE),
+                 collapse = "")
+  expect_equal(lengths(regmatches(sheet, gregexpr("dataValidation type=\"list\"", sheet))), 3L)
+  ins <- openxlsx::read.xlsx(xl, sheet = "instructions", colNames = FALSE, skipEmptyRows = FALSE)
+  expect_true(all(c(.validation_terms, .ffb_taxonomic_status, .ffb_nomenclatural_status) %in%
+                    ins[[1]]))
   expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.html")))
 })
 
