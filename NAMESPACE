@@ -27,7 +27,7 @@ importFrom(dplyr,
 )
 importFrom(jsonlite,fromJSON)
 importFrom(magrittr,"%>%")
-importFrom(openxlsx,write.xlsx)
+importFrom(openxlsx,createWorkbook)
 importFrom(purrr,pmap_chr)
 importFrom(rlang,.data)
 importFrom(stats,na.omit)

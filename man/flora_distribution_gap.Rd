@@ -61,8 +61,9 @@ for the domain analysis. Defaults to \code{5000}.}
 
 \item{save}{Logical. If \code{TRUE} (default), the result of each taxon with at
 least one candidate new state or domain record is saved to disk as an \code{.xlsx}
-spreadsheet named after the taxon, \code{flora_distribution_gap_<taxon>.xlsx}.
-Taxa with nothing new get no spreadsheet (see Details).}
+spreadsheet named after the taxon, \code{flora_distribution_gap_<taxon>.xlsx},
+ready for a specialist to validate the candidates (see Details). Taxa with nothing
+new get no spreadsheet.}
 
 \item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_distribution_gap"}.}
@@ -86,29 +87,35 @@ browser once rendered (in interactive sessions only). Default \code{FALSE}:
 the report is only saved to \code{dir}.}
 }
 \value{
-A list of three \code{data.frame}s, each with a \code{Taxon} column; with
-  several taxa, the rows of all of them are stacked:
+A list of three \code{data.frame}s, each with a \code{taxon} column; with
+  several taxa, the rows of all of them are stacked. Fields taken from the source
+  databases keep their original Darwin Core names (e.g. \code{recordedBy},
+  \code{decimalLatitude}); the columns created by floraR are in lower case:
 \describe{
   \item{\code{states}}{One row per Brazilian state with any evidence for
-    \code{taxon} (in FFB or in the queried sources): \code{Taxon}, \code{State},
-    \code{In_FFB_distribution} (whether FFB already lists the state),
-    \code{GBIF_records}, \code{Reflora_records}, \code{Jabot_records}, and
-    \code{speciesLink_records}
+    \code{taxon} (in FFB or in the queried sources): \code{taxon}, \code{state},
+    \code{in_ffb_distribution} (whether FFB already lists the state),
+    \code{gbif_records}, \code{reflora_records}, \code{jabot_records}, and
+    \code{specieslink_records}
     (records in the state, for each source queried), and
-    \code{New_state_record_candidate} (\code{TRUE} when the state has evidence from
+    \code{new_state_record_candidate} (\code{TRUE} when the state has evidence from
     at least one source but is not in FFB's distribution).}
   \item{\code{domains}}{One row per phytogeographic domain with evidence (in FFB or
-    among the georeferenced records): \code{Taxon}, \code{Domain},
-    \code{In_FFB_distribution}, \code{Georeferenced_records}, and
-    \code{New_domain_record_candidate}. Empty when \code{domains = FALSE}.}
-  \item{\code{records}}{One row per georeferenced record, with its coordinates,
-    \code{State}, \code{Domain}, collector, date, institution, catalogue number,
-    identification, a link to the record, and the logical columns
-    \code{New_state_record_candidate} and \code{New_domain_record_candidate}. Empty
-    when \code{domains = FALSE}.}
+    among the georeferenced records): \code{taxon}, \code{domain},
+    \code{in_ffb_distribution}, \code{georeferenced_records}, and
+    \code{new_domain_record_candidate}. Empty when \code{domains = FALSE}.}
+  \item{\code{records}}{The individual records: every georeferenced record, plus the
+    records without coordinates from the candidate new states, with the candidates
+    first. Columns: \code{taxon}, \code{source}, \code{decimalLatitude},
+    \code{decimalLongitude}, \code{state}, \code{domain}, \code{municipality},
+    \code{locality}, \code{recordedBy}, \code{recordNumber}, \code{eventDate} (the
+    year, for REFLORA and JABOT), \code{institutionCode}, \code{catalogNumber},
+    \code{scientificName} (the record's identification), \code{record_link}, and the
+    logical columns \code{new_state_record_candidate} and
+    \code{new_domain_record_candidate}.}
 }
 With \code{save = TRUE}, each table is saved as a sheet of the \code{.xlsx}
-spreadsheet.
+spreadsheet, after an \code{instructions} sheet (see Details).
 }
 \description{
 Given one or more genera or species of plants or algae, checks \href{https://www.gbif.org}{GBIF},
@@ -191,6 +198,21 @@ per source - and a conclusion: \code{"Within FFB distribution - no update needed
 or \code{"No records found - check the name"} when the databases returned nothing
 at all (which says nothing about the taxon's distribution). Their rows are still
 returned.
+
+\strong{Validating the spreadsheet.} The spreadsheet is meant to be reviewed by a
+specialist of the group. Its first sheet, \code{instructions}, explains what to do:
+the goal is to find at least \emph{one} voucher specimen supporting each candidate
+new state or domain, not to check every record. The \code{records} sheet ends with
+two columns for the specialist: \code{validation}, filled in from a drop-down list
+with \code{"correct"} (a voucher for the new record), \code{"incorrect"}
+(misidentified, or wrong locality), or \code{"uncertain"} (checked, but impossible
+to decide), and left empty for records not reviewed; and \code{comments}, optional
+free text. In the \code{states} and \code{domains} sheets,
+\code{records_reviewed} and \code{vouchers_validated} count, for each candidate,
+the records reviewed and those validated as correct, and the \code{instructions}
+sheet sums up the progress; Excel updates them as the records are reviewed. Every
+sheet has filters on its header, and the header row and the taxon column stay
+frozen while scrolling.
 }
 \examples{
 \dontrun{
@@ -203,14 +225,14 @@ gap_ne <- flora_distribution_gap(taxon = "Luetzelburgia",
 
 # The candidate new phytogeographic domains, and the records behind them
 gap$domains
-gap$records[gap$records$New_domain_record_candidate, ]
+gap$records[gap$records$new_domain_record_candidate, ]
 
 # Several species in one call: REFLORA and JABOT are read once, and each species
 # gets its own spreadsheet and report
 gap_many <- flora_distribution_gap(taxon = c("Luetzelburgia auriculata",
                                              "Luetzelburgia bahiensis",
                                              "Luetzelburgia praecox"))
-gap_many$states[gap_many$states$New_state_record_candidate, ]
+gap_many$states[gap_many$states$new_state_record_candidate, ]
 
 # A quick check with GBIF only
 gap_gbif <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",

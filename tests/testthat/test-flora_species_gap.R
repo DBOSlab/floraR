@@ -503,6 +503,11 @@ test_that("writes a real .xlsx file and HTML report", {
                     open_report = FALSE, dir = out_dir, verbose = FALSE)
 
   expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.xlsx")))
+  xl <- file.path(out_dir, "flora_species_gap_Luetzelburgia.xlsx")
+  expect_equal(openxlsx::getSheetNames(xl), c("instructions", "species"))
+  sp <- openxlsx::read.xlsx(xl, sheet = "species")
+  expect_equal(names(sp)[1], "Taxon_name")
+  expect_equal(tail(names(sp), 2), c("validation", "comments"))
   expect_true(file.exists(file.path(out_dir, "flora_species_gap_Luetzelburgia.html")))
 })
 

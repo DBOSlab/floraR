@@ -127,11 +127,11 @@ test_that("flora_distribution_gap flags a GBIF state not in FFB's distribution",
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)$states
 
-  pb <- result[result$State == "Paraíba", ]
-  expect_true(pb$New_state_record_candidate)
-  expect_false(pb$In_FFB_distribution)
-  expect_equal(pb$GBIF_records, 2L)
-  expect_false(result$New_state_record_candidate[result$State == "Bahia"])
+  pb <- result[result$state == "Paraíba", ]
+  expect_true(pb$new_state_record_candidate)
+  expect_false(pb$in_ffb_distribution)
+  expect_equal(pb$gbif_records, 2L)
+  expect_false(result$new_state_record_candidate[result$state == "Bahia"])
 })
 
 
@@ -142,10 +142,10 @@ test_that("flora_distribution_gap keeps FFB states without records, not as candi
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)$states
 
-  pe <- result[result$State == "Pernambuco", ]
-  expect_true(pe$In_FFB_distribution)
-  expect_equal(pe$GBIF_records, 0L)
-  expect_false(pe$New_state_record_candidate)
+  pe <- result[result$state == "Pernambuco", ]
+  expect_true(pe$in_ffb_distribution)
+  expect_equal(pe$gbif_records, 0L)
+  expect_false(pe$new_state_record_candidate)
 })
 
 
@@ -156,8 +156,8 @@ test_that("flora_distribution_gap compares a genus against all its species' stat
   result <- flora_distribution_gap(taxon = "Luetzelburgia", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)$states
 
-  expect_false(result$New_state_record_candidate[result$State == "Minas Gerais"])
-  expect_true(result$New_state_record_candidate[result$State == "Goiás"])
+  expect_false(result$new_state_record_candidate[result$state == "Minas Gerais"])
+  expect_true(result$new_state_record_candidate[result$state == "Goiás"])
 })
 
 
@@ -168,7 +168,7 @@ test_that("flora_distribution_gap restricts the check to the requested states", 
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", state = c("PB", "Goias"),
                                    save = FALSE, html_report = FALSE, verbose = FALSE)$states
 
-  expect_setequal(result$State, c("Paraíba", "Goiás"))
+  expect_setequal(result$state, c("Paraíba", "Goiás"))
 })
 
 
@@ -189,8 +189,8 @@ test_that("flora_distribution_gap still reports FFB states when GBIF has no matc
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)$states
 
-  expect_setequal(result$State, c("Bahia", "Pernambuco", "Ceará"))
-  expect_false(any(result$New_state_record_candidate))
+  expect_setequal(result$state, c("Bahia", "Pernambuco", "Ceará"))
+  expect_false(any(result$new_state_record_candidate))
 })
 
 
@@ -213,7 +213,7 @@ test_that("flora_distribution_gap skips speciesLink without an API key", {
     "No speciesLink API key"
   )
   expect_false(called)
-  expect_true(all(result$speciesLink_records == 0L))
+  expect_true(all(result$specieslink_records == 0L))
 })
 
 
@@ -231,10 +231,10 @@ test_that("flora_distribution_gap adds speciesLink evidence when a key is given"
                                    sources = c("gbif", "speciesLink"), specieslink_key = "k",
                                    save = FALSE, html_report = FALSE, verbose = FALSE)$states
 
-  se <- result[result$State == "Sergipe", ]
-  expect_equal(se$speciesLink_records, 4L)
-  expect_equal(se$GBIF_records, 0L)
-  expect_true(se$New_state_record_candidate)
+  se <- result[result$state == "Sergipe", ]
+  expect_equal(se$specieslink_records, 4L)
+  expect_equal(se$gbif_records, 0L)
+  expect_true(se$new_state_record_candidate)
 })
 
 
@@ -252,7 +252,7 @@ test_that("flora_distribution_gap explains when FFB lists no state for the taxon
                                      html_report = FALSE, verbose = TRUE)$states,
     "FFB lists no Brazilian state"
   )
-  expect_true(result$New_state_record_candidate[result$State == "Sergipe"])
+  expect_true(result$new_state_record_candidate[result$state == "Sergipe"])
 })
 
 
@@ -324,17 +324,17 @@ test_that("flora_distribution_gap flags georeferenced records in domains not lis
                                    html_report = FALSE, verbose = FALSE)
 
   dom <- result$domains
-  expect_setequal(dom$Domain, c("Caatinga", "Cerrado", "Mata Atl\u00e2ntica"))
-  expect_true(dom$In_FFB_distribution[dom$Domain == "Caatinga"])
-  expect_true(dom$New_domain_record_candidate[dom$Domain == "Cerrado"])
-  expect_true(dom$New_domain_record_candidate[dom$Domain == "Mata Atl\u00e2ntica"])
-  expect_equal(dom$Georeferenced_records[dom$Domain == "Cerrado"], 1L)
+  expect_setequal(dom$domain, c("Caatinga", "Cerrado", "Mata Atl\u00e2ntica"))
+  expect_true(dom$in_ffb_distribution[dom$domain == "Caatinga"])
+  expect_true(dom$new_domain_record_candidate[dom$domain == "Cerrado"])
+  expect_true(dom$new_domain_record_candidate[dom$domain == "Mata Atl\u00e2ntica"])
+  expect_equal(dom$georeferenced_records[dom$domain == "Cerrado"], 1L)
 
   rec <- result$records
   expect_equal(nrow(rec), 4)
-  expect_equal(rec$Domain, c("Caatinga", "Cerrado", "Mata Atl\u00e2ntica", NA))
-  expect_equal(rec$New_domain_record_candidate, c(FALSE, TRUE, TRUE, FALSE))
-  expect_equal(rec$New_state_record_candidate, c(FALSE, TRUE, TRUE, FALSE))
+  expect_equal(rec$domain, c("Cerrado", "Mata Atl\u00e2ntica", "Caatinga", NA))
+  expect_equal(rec$new_domain_record_candidate, c(TRUE, TRUE, FALSE, FALSE))
+  expect_equal(rec$new_state_record_candidate, c(TRUE, TRUE, FALSE, FALSE))
 })
 
 
@@ -345,8 +345,8 @@ test_that("flora_distribution_gap never flags an offshore record as a new domain
 
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)
-  expect_true(is.na(result$records$Domain))
-  expect_false(any(result$domains$New_domain_record_candidate))
+  expect_true(is.na(result$records$domain))
+  expect_false(any(result$domains$new_domain_record_candidate))
 })
 
 
@@ -411,9 +411,60 @@ test_that("flora_distribution_gap saves the three tables as spreadsheet sheets",
 
   flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = TRUE, html_report = FALSE,
                          dir = out_dir, verbose = FALSE)
-  expect_equal(openxlsx::getSheetNames(file.path(
-    out_dir, "flora_distribution_gap_Luetzelburgia_auriculata.xlsx")),
-               c("states", "domains", "records"))
+  file <- file.path(out_dir, "flora_distribution_gap_Luetzelburgia_auriculata.xlsx")
+  expect_equal(openxlsx::getSheetNames(file),
+               c("instructions", "states", "domains", "records"))
+
+  # Original database fields keep their Darwin Core names, new columns are in
+  # lower case, and the specialist's columns close the records sheet
+  rec <- openxlsx::read.xlsx(file, sheet = "records")
+  expect_true(all(c("taxon", "source", "decimalLatitude", "decimalLongitude", "state",
+                    "domain", "recordedBy", "recordNumber", "eventDate", "institutionCode",
+                    "catalogNumber", "scientificName", "record_link") %in% names(rec)))
+  expect_equal(tail(names(rec), 2), c("validation", "comments"))
+  expect_true(all(is.na(rec$validation)))
+
+  # Counters per candidate state/domain, read live from the records sheet
+  st <- openxlsx::read.xlsx(file, sheet = "states")
+  expect_equal(tail(names(st), 2), c("records_reviewed", "vouchers_validated"))
+  expect_equal(names(st)[1], "taxon")
+
+  xml_dir <- withr::local_tempdir()
+  utils::unzip(file, exdir = xml_dir)
+  sheet_xml <- function(i) paste(readLines(file.path(xml_dir, "xl", "worksheets",
+                                                     paste0("sheet", i, ".xml")), warn = FALSE),
+                                 collapse = "")
+  # Header row and taxon column frozen (sheets 2 = states, 4 = records)
+  expect_match(sheet_xml(2), 'topLeftCell="B2"')
+  expect_match(sheet_xml(4), 'topLeftCell="B2"')
+  # The validation column offers the three terms of the instructions sheet
+  expect_match(sheet_xml(4), "dataValidation type=\"list\".*'instructions'!")
+  ins <- openxlsx::read.xlsx(file, sheet = "instructions", colNames = FALSE, skipEmptyRows = FALSE)
+  expect_true(all(.validation_terms %in% ins[[1]]))
+  expect_true(any(grepl("at least ONE voucher", ins[[1]])))
+})
+
+
+test_that(".review_records adds the records without coordinates of the candidate states", {
+  coords <- .empty_coord_records()
+  coords[1, ] <- NA
+  coords$Taxon <- "L. auriculata"; coords$Source <- "GBIF"; coords$State <- "Bahia"
+  coords$Domain <- "Caatinga"; coords$Latitude <- -10; coords$Longitude <- -40
+  coords$RecordLink <- "https://www.gbif.org/occurrence/1"
+  coords$New_state_record_candidate <- FALSE; coords$New_domain_record_candidate <- FALSE
+  detail <- data.frame(Source = c("GBIF", "GBIF", "REFLORA"), State = "Piau\u00ed",
+                       Municipality = NA, Locality = NA, RecordedBy = "A", RecordNumber = "1",
+                       EventDate = NA, Institution = c(NA, NA, "RB"), CatalogNumber = c(NA, NA, "9"),
+                       Identified_as = "L. auriculata",
+                       RecordLink = c("https://www.gbif.org/occurrence/1",
+                                      "https://www.gbif.org/occurrence/2", NA),
+                       stringsAsFactors = FALSE)
+  rec <- .review_records(coords, detail, "L. auriculata")
+  # The GBIF record already georeferenced is not repeated; candidates come first
+  expect_equal(nrow(rec), 3)
+  expect_equal(rec$State, c("Piau\u00ed", "Piau\u00ed", "Bahia"))
+  expect_true(all(is.na(rec$Latitude[1:2])))
+  expect_equal(rec$New_state_record_candidate, c(TRUE, TRUE, FALSE))
 })
 
 
@@ -488,16 +539,16 @@ test_that("flora_distribution_gap combines GBIF, REFLORA, and JABOT by default",
   result <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", save = FALSE,
                                    html_report = FALSE, verbose = FALSE)
   st <- result$states
-  expect_true(all(c("GBIF_records", "Reflora_records", "Jabot_records") %in% names(st)))
+  expect_true(all(c("gbif_records", "reflora_records", "jabot_records") %in% names(st)))
   # Piaui only in REFLORA, Sergipe only in JABOT: both are candidates
-  expect_setequal(st$State[st$New_state_record_candidate],
+  expect_setequal(st$state[st$new_state_record_candidate],
                   c("Piauí", "Sergipe"))
-  expect_equal(st$Reflora_records[st$State == "Bahia"], 1L)
-  expect_equal(st$Jabot_records[st$State == "Sergipe"], 1L)
+  expect_equal(st$reflora_records[st$state == "Bahia"], 1L)
+  expect_equal(st$jabot_records[st$state == "Sergipe"], 1L)
   # The Bolivian specimen is not counted
-  expect_equal(sum(st$Reflora_records), 2L)
+  expect_equal(sum(st$reflora_records), 2L)
   # JABOT's georeferenced specimen is placed in a domain
-  expect_true("JABOT" %in% result$records$Source)
+  expect_true("JABOT" %in% result$records$source)
 })
 
 
@@ -507,13 +558,13 @@ test_that("flora_distribution_gap queries only the requested herbaria", {
 
   st <- flora_distribution_gap(taxon = "Luetzelburgia auriculata", sources = "gbif",
                                save = FALSE, html_report = FALSE, verbose = FALSE)$states
-  expect_false(any(c("Reflora_records", "Jabot_records") %in% names(st)))
+  expect_false(any(c("reflora_records", "jabot_records") %in% names(st)))
 
   st <- flora_distribution_gap(taxon = "Luetzelburgia auriculata",
                                sources = c("gbif", "jabot"),
                                save = FALSE, html_report = FALSE, verbose = FALSE)$states
-  expect_true("Jabot_records" %in% names(st))
-  expect_false("Reflora_records" %in% names(st))
+  expect_true("jabot_records" %in% names(st))
+  expect_false("reflora_records" %in% names(st))
 })
 
 
@@ -566,12 +617,12 @@ test_that("several taxa: herbaria are queried once and results are stacked", {
   expect_length(calls, 2)
   expect_equal(calls[[1]], c("Luetzelburgia auriculata", "Luetzelburgia bahiensis"))
   # both taxa in one table, each with its own FFB states
-  expect_setequal(unique(res$states$Taxon), c("Luetzelburgia auriculata",
+  expect_setequal(unique(res$states$taxon), c("Luetzelburgia auriculata",
                                                "Luetzelburgia bahiensis"))
-  bah <- res$states[res$states$Taxon == "Luetzelburgia bahiensis", ]
-  expect_true(bah$In_FFB_distribution[bah$State == "Minas Gerais"])
+  bah <- res$states[res$states$taxon == "Luetzelburgia bahiensis", ]
+  expect_true(bah$in_ffb_distribution[bah$state == "Minas Gerais"])
   # herbarium specimens of auriculata are not counted for bahiensis
-  expect_false("Piau\u00ed" %in% bah$State[bah$Reflora_records > 0])
+  expect_false("Piau\u00ed" %in% bah$state[bah$reflora_records > 0])
   # one spreadsheet per taxon, named after it
   expect_setequal(list.files(out_dir),
                   c("flora_distribution_gap_Luetzelburgia_auriculata.xlsx",
@@ -585,7 +636,7 @@ test_that("several taxa: a failing taxon is skipped, not fatal", {
   testthat::local_mocked_bindings(
     .distribution_gap_taxon = function(taxon, ...) {
       if (taxon == "Bad name") stop("boom")
-      list(states = data.frame(Taxon = taxon, State = "Bahia"),
+      list(states = data.frame(taxon = taxon, state = "Bahia"),
            domains = .empty_domain_table(), records = .empty_coord_records())
     },
     .package = "floraR"
@@ -594,7 +645,7 @@ test_that("several taxa: a failing taxon is skipped, not fatal", {
     res <- flora_distribution_gap(taxon = c("Bad name", "Luetzelburgia auriculata"),
                                   save = FALSE, html_report = FALSE),
     "Skipping 'Bad name': boom")
-  expect_equal(res$states$Taxon, "Luetzelburgia auriculata")
+  expect_equal(res$states$taxon, "Luetzelburgia auriculata")
   # with a single taxon, the error is not swallowed
   expect_error(flora_distribution_gap(taxon = "Bad name", save = FALSE, html_report = FALSE,
                                       verbose = FALSE), "boom")
@@ -641,7 +692,7 @@ test_that("no gap: no spreadsheet or report, only the single no-gap report", {
   expect_match(html, "Luetzelburgia auriculata", fixed = TRUE)
   expect_match(html, "no update needed", fixed = TRUE)
   # the results are still returned
-  expect_true("Luetzelburgia auriculata" %in% res$states$Taxon)
+  expect_true("Luetzelburgia auriculata" %in% res$states$taxon)
 })
 
 

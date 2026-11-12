@@ -542,25 +542,168 @@
 
 
 #_______________________________________________________________________________
-# Function to save xlsx spreadsheets (used by the *_gap() functions, which return a
-# richer, multi-source table better suited to a proper spreadsheet than a
-# plain CSV) ####
-.save_xlsx <- function(df,
-                       verbose = TRUE,
-                       filename = NULL,
-                       dir = dir) {
+# The terms a specialist uses in the 'validation' column of the *_gap()
+# spreadsheets (offered as a drop-down list); an empty cell = not reviewed ####
+.validation_terms <- c("correct", "incorrect", "uncertain")
+
+
+#_______________________________________________________________________________
+# Write the *_gap() spreadsheets: an optional 'instructions' sheet first, then
+# one sheet per data.frame of 'sheets'. Every data sheet has a bold header with
+# filters, frozen panes on the header row and the first (taxon) column, and
+# column widths fitted to its header and content. The sheet named
+# 'validate_sheet' gets two extra columns at the end, 'validation' (a
+# drop-down of .validation_terms) and 'comments' (optional free text), for the
+# specialist who reviews the candidates. 'formula_cols' adds Excel formula
+# columns after the data: a named list (by sheet) of named lists (by column)
+# of formula strings, one per row. Columns named in 'link_cols' are written as
+# clickable hyperlinks. 'help' is a list of blocks for the instructions sheet
+# (see .write_help_sheet()). ####
+.write_spreadsheet <- function(sheets, filename, dir, verbose = TRUE, help = NULL,
+                               validate_sheet = NULL, formula_cols = list(),
+                               link_cols = character(0)) {
 
   if (!dir.exists(dir)) {
     dir.create(dir, recursive = TRUE)
   }
-
-  filename <- paste0(filename, ".xlsx")
+  file <- file.path(dir, paste0(filename, ".xlsx"))
   if (verbose) {
-    message(paste0("Writing spreadsheet '",
-                   filename, "' within '",
-                   dir, "' folder on disk."))
+    message("Writing spreadsheet '", basename(file), "' within '", dir, "' folder on disk.")
   }
-  openxlsx::write.xlsx(df, file = paste0(dir, "/", filename))
+
+  wb <- openxlsx::createWorkbook()
+  openxlsx::modifyBaseFont(wb, fontSize = 10, fontName = "Calibri Light", fontColour = "black")
+  header_style <- openxlsx::createStyle(textDecoration = "bold", fgFill = "#DCE6F1",
+                                        border = "Bottom")
+  review_style <- openxlsx::createStyle(textDecoration = "bold", fgFill = "#FFE699",
+                                        border = "Bottom")
+
+  terms_ref <- NULL
+  if (!is.null(help)) terms_ref <- .write_help_sheet(wb, help)
+
+  for (nm in names(sheets)) {
+    data <- as.data.frame(sheets[[nm]], stringsAsFactors = FALSE)
+    review <- identical(nm, validate_sheet)
+    if (review) {
+      data$validation <- rep(NA_character_, nrow(data))
+      data$comments <- rep(NA_character_, nrow(data))
+    }
+    for (lc in intersect(link_cols, names(data))) {
+      x <- as.character(data[[lc]])
+      class(x) <- "hyperlink"
+      data[[lc]] <- x
+    }
+
+    openxlsx::addWorksheet(wb, nm)
+    openxlsx::writeData(wb, sheet = nm, x = data, headerStyle = header_style)
+
+    # Formula columns, after the data
+    fcols <- formula_cols[[nm]]
+    for (k in seq_along(fcols)) {
+      col <- ncol(data) + k
+      openxlsx::writeData(wb, sheet = nm, x = names(fcols)[k], startCol = col, startRow = 1)
+      openxlsx::addStyle(wb, sheet = nm, style = header_style, rows = 1, cols = col)
+      if (nrow(data) > 0) {
+        openxlsx::writeFormula(wb, sheet = nm, x = fcols[[k]], startCol = col, startRow = 2)
+      }
+    }
+    col_names <- c(names(data), names(fcols))
+
+    if (review) {
+      cols <- match(c("validation", "comments"), col_names)
+      openxlsx::addStyle(wb, sheet = nm, style = review_style, rows = 1, cols = cols)
+      if (nrow(data) > 0 && !is.null(terms_ref)) {
+        openxlsx::dataValidation(wb, sheet = nm, cols = cols[1], rows = 1 + seq_len(nrow(data)),
+                                 type = "list", value = terms_ref)
+      }
+    }
+
+    # Filters on the header row; header row and first (taxon) column frozen
+    if (nrow(data) > 0) {
+      openxlsx::addFilter(wb, sheet = nm, rows = 1, cols = seq_along(col_names))
+    }
+    openxlsx::freezePane(wb, sheet = nm, firstActiveRow = 2, firstActiveCol = 2)
+
+    # Column widths: header text, or most of the column's content if wider
+    for (j in seq_along(col_names)) {
+      content <- if (j <= ncol(data)) nchar(as.character(data[[j]]), keepNA = FALSE) else 0
+      content_width <- if (length(content) > 0) stats::quantile(content, 0.9, names = FALSE) else 0
+      width <- min(max(nchar(col_names[j]) + 4, content_width + 2, 8), 50)
+      openxlsx::setColWidths(wb, sheet = nm, cols = j, widths = width)
+    }
+  }
+
+  openxlsx::saveWorkbook(wb, file, overwrite = TRUE)
+  invisible(file)
+}
+
+
+#_______________________________________________________________________________
+# The 'instructions' sheet of a *_gap() spreadsheet, written from a list of
+# blocks, each list(kind, x): kind "title", "heading" or "text" (x: a string,
+# one row each), "table" (x: a data.frame, written with a bold header),
+# "terms" (x: a data.frame whose first column is .validation_terms - its cells
+# feed the drop-down list of the 'validation' column), or "formulas" (x: a
+# data.frame of labels and Excel formulas). Returns the sheet reference of the
+# validation terms, for openxlsx::dataValidation(). ####
+.write_help_sheet <- function(wb, blocks) {
+  sh <- "instructions"
+  openxlsx::addWorksheet(wb, sh, gridLines = FALSE)
+  styles <- list(
+    title = openxlsx::createStyle(fontSize = 14, textDecoration = "bold", fontColour = "#1F4E79"),
+    heading = openxlsx::createStyle(fontSize = 11, textDecoration = "bold", fontColour = "#1F4E79"),
+    header = openxlsx::createStyle(textDecoration = "bold", fgFill = "#DCE6F1", border = "Bottom",
+                                   wrapText = TRUE, valign = "top"),
+    cell = openxlsx::createStyle(wrapText = TRUE, valign = "top", border = "Bottom",
+                                 borderColour = "#D9D9D9"),
+    term = openxlsx::createStyle(textDecoration = "bold", fgFill = "#FFE699", valign = "top",
+                                 border = "Bottom", borderColour = "#D9D9D9")
+  )
+  row <- 1
+  terms_ref <- NULL
+  for (b in blocks) {
+    if (b$kind %in% c("title", "heading", "text")) {
+      openxlsx::writeData(wb, sh, x = b$x, startCol = 1, startRow = row)
+      if (b$kind != "text") openxlsx::addStyle(wb, sh, styles[[b$kind]], rows = row, cols = 1)
+      row <- row + 1 + (b$kind == "title")
+      if (b$kind == "text" && isTRUE(b$gap)) row <- row + 1
+    } else {
+      df <- b$x
+      n <- nrow(df)
+      if (b$kind == "formulas") {
+        openxlsx::writeData(wb, sh, x = df[[1]], startCol = 1, startRow = row)
+        openxlsx::writeFormula(wb, sh, x = df[[2]], startCol = 2, startRow = row)
+        openxlsx::addStyle(wb, sh, styles$cell, rows = row - 1 + seq_len(n), cols = 1:2,
+                           gridExpand = TRUE)
+        row <- row + n + 1
+        next
+      }
+      openxlsx::writeData(wb, sh, x = df, startCol = 1, startRow = row, headerStyle = styles$header)
+      openxlsx::addStyle(wb, sh, styles$cell, rows = row + seq_len(n), cols = seq_along(df),
+                         gridExpand = TRUE)
+      if (b$kind == "terms") {
+        # The explanation spans columns B:E, tall enough for its wrapped text
+        for (r in row + 0:n) openxlsx::mergeCells(wb, sh, cols = 2:5, rows = r)
+        openxlsx::addStyle(wb, sh, styles$cell, rows = row + seq_len(n), cols = 2:5,
+                           gridExpand = TRUE)
+        openxlsx::setRowHeights(wb, sh, rows = row + seq_len(n), heights = 30)
+        openxlsx::addStyle(wb, sh, styles$term, rows = row + seq_len(n), cols = 1)
+        terms_ref <- sprintf("'%s'!$A$%d:$A$%d", sh, row + 1, row + n)
+      }
+      row <- row + n + 2
+    }
+  }
+  openxlsx::setColWidths(wb, sh, cols = 1:5, widths = c(38, 22, 30, 14, 52))
+  terms_ref
+}
+
+
+#_______________________________________________________________________________
+# An Excel cell range of one column of a data sheet, by column name, for the
+# counters of the instructions sheet, e.g. records!$R$2:$R$120 ####
+.xl_range <- function(sheet, col_names, col, n) {
+  letter <- openxlsx::int2col(match(col, col_names))
+  sprintf("%s!$%s$2:$%s$%d", sheet, letter, letter, max(n, 1) + 1)
 }
 
 

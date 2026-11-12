@@ -69,8 +69,9 @@ fetched (one request per name). With \code{"rWCVPdata"} it is always included.}
 
 \item{save}{Logical. If \code{TRUE} (default), the result of each genus with at
 least one species missing from FFB is saved to disk as an \code{.xlsx} spreadsheet
-named after the genus, \code{flora_species_gap_<genus>.xlsx}. Genera with nothing
-missing get no spreadsheet (see Details).}
+named after the genus, \code{flora_species_gap_<genus>.xlsx}, ready for a
+specialist to validate the candidates (see Details). Genera with nothing missing get
+no spreadsheet.}
 
 \item{dir}{Character. Directory where the spreadsheets and reports are saved.
 Defaults to \code{"flora_species_gap"}.}
@@ -242,6 +243,18 @@ TRUE}), with what was searched for each - its number of species in FFB and of na
 with evidence in each source - and a conclusion: \code{"All names already in FFB -
 no update needed"}, or \code{"No names found - check the genus"} when the sources
 returned nothing at all.
+
+\strong{Validating the spreadsheet.} The spreadsheet is meant to be reviewed by a
+specialist of the group. Its first sheet, \code{instructions}, explains what to do,
+and the candidates are in the \code{species} sheet, which ends with two columns for
+the specialist: \code{validation}, filled in from a drop-down list with
+\code{"correct"} (an accepted species occurring in Brazil, to be added to FFB),
+\code{"incorrect"} (e.g. a synonym of a name already in FFB, or not in Brazil), or
+\code{"uncertain"} (checked, but impossible to decide yet), and left empty for
+names not reviewed; and \code{comments}, optional free text. The
+\code{instructions} sheet counts the names reviewed and validated, updated by Excel
+as the names are reviewed. The sheet has filters on its header, and the header row
+and the name column stay frozen while scrolling.
 }
 \examples{
 \dontrun{

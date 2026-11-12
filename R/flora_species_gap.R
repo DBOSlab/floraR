@@ -98,6 +98,18 @@
 #' no update needed"}, or \code{"No names found - check the genus"} when the sources
 #' returned nothing at all.
 #'
+#' \strong{Validating the spreadsheet.} The spreadsheet is meant to be reviewed by a
+#' specialist of the group. Its first sheet, \code{instructions}, explains what to do,
+#' and the candidates are in the \code{species} sheet, which ends with two columns for
+#' the specialist: \code{validation}, filled in from a drop-down list with
+#' \code{"correct"} (an accepted species occurring in Brazil, to be added to FFB),
+#' \code{"incorrect"} (e.g. a synonym of a name already in FFB, or not in Brazil), or
+#' \code{"uncertain"} (checked, but impossible to decide yet), and left empty for
+#' names not reviewed; and \code{comments}, optional free text. The
+#' \code{instructions} sheet counts the names reviewed and validated, updated by Excel
+#' as the names are reviewed. The sheet has filters on its header, and the header row
+#' and the name column stay frozen while scrolling.
+#'
 #' @usage
 #' flora_species_gap(
 #'   taxon,
@@ -163,8 +175,9 @@
 #'
 #' @param save Logical. If \code{TRUE} (default), the result of each genus with at
 #'   least one species missing from FFB is saved to disk as an \code{.xlsx} spreadsheet
-#'   named after the genus, \code{flora_species_gap_<genus>.xlsx}. Genera with nothing
-#'   missing get no spreadsheet (see Details).
+#'   named after the genus, \code{flora_species_gap_<genus>.xlsx}, ready for a
+#'   specialist to validate the candidates (see Details). Genera with nothing missing get
+#'   no spreadsheet.
 #'
 #' @param dir Character. Directory where the spreadsheets and reports are saved.
 #'   Defaults to \code{"flora_species_gap"}.
@@ -269,7 +282,7 @@
 #' }
 #'
 #' @importFrom jsonlite fromJSON
-#' @importFrom openxlsx write.xlsx
+#' @importFrom openxlsx createWorkbook
 #'
 #' @export
 
@@ -422,7 +435,7 @@ flora_species_gap <- function(taxon,
 
   if (save) {
     dir <- .arg_check_dir(dir)
-    .save_xlsx(result, verbose = verbose, filename = filename, dir = dir)
+    .save_species_spreadsheet(result, taxon, filename, dir, verbose)
   }
 
   if (html_report) {
@@ -772,4 +785,68 @@ flora_species_gap <- function(taxon,
   m <- m[order(-rowSums(inside), m$Taxon_name), intersect(cols, names(m)), drop = FALSE]
   rownames(m) <- NULL
   m
+}
+
+
+#_______________________________________________________________________________
+# Save one genus' flora_species_gap() spreadsheet: an instructions sheet for
+# the specialist, then the candidate names, with the 'validation' and
+# 'comments' columns at the end ####
+.save_species_spreadsheet <- function(result, taxon, filename, dir, verbose) {
+  cols <- c(names(result), "validation", "comments")
+  val <- .xl_range("species", cols, "validation", nrow(result))
+  progress <- data.frame(
+    what = c("Names missing from FFB (candidates)", "Names reviewed (validation filled in)",
+             "  correct - to be added to FFB", "  incorrect", "  uncertain"),
+    value = c(as.character(nrow(result)), sprintf("COUNTA(%s)", val),
+              sprintf('COUNTIF(%s,"%s")', val, .validation_terms)),
+    stringsAsFactors = FALSE)
+  .write_spreadsheet(sheets = list(species = result), filename = filename, dir = dir,
+                     verbose = verbose, help = .species_help(taxon, progress),
+                     validate_sheet = "species",
+                     link_cols = c("POWO_URL", "IPNI_URL", "GBIF_URL"))
+}
+
+
+#_______________________________________________________________________________
+# The instructions sheet of a flora_species_gap() spreadsheet ####
+.species_help <- function(taxon, progress) {
+  txt <- function(x, gap = FALSE) list(kind = "text", x = x, gap = gap)
+  list(
+    list(kind = "title", x = paste0("How to validate the species of ", taxon, " missing from FFB")),
+    txt(paste0("Spreadsheet written by floraR::flora_species_gap() on ", Sys.Date(),
+               ": the species-level names that the sources queried record for Brazil but that the")),
+    txt("Flora e Funga do Brasil (FFB) does not list yet - one row per name.", gap = TRUE),
+    txt("GOAL: decide, for each name, whether the species should be added to FFB. You do NOT need to check every"),
+    txt("type specimen: one reliable specimen or source showing that the species is accepted and occurs in Brazil is enough.", gap = TRUE),
+
+    list(kind = "heading", x = "What to do"),
+    txt("1. In the species sheet, read the name (Taxon_name, Accepted_name) and the evidence (Found_in, and the POWO, GBIF, REFLORA, JABOT columns)."),
+    txt("2. Open the links (POWO_URL, IPNI_URL, GBIF_URL, REFLORA_Links) to see the protologue, the distribution and the type specimens."),
+    txt("3. In validation, choose correct, incorrect or uncertain from the drop-down list (see the terms below)."),
+    txt("4. Move on to the next name. Leave validation EMPTY for the names you did not look at: every filled cell counts as a reviewed name."),
+    txt("Please do not rename the sheet or the columns - the counters depend on them.", gap = TRUE),
+
+    list(kind = "heading", x = "Terms for the column validation (the same three words for every name)"),
+    list(kind = "terms", x = data.frame(
+      validation = .validation_terms,
+      meaning = c("You checked the name: it is an accepted species that occurs in Brazil and is not a synonym of a name already in FFB. It should be added to FFB.",
+                  "You checked the name: it should not be added (e.g. a synonym of a name in FFB, not in Brazil, a misapplied or doubtful name).",
+                  "You checked the name but cannot decide yet (e.g. unclear synonymy, type not seen, needs a specialist of the group)."),
+      stringsAsFactors = FALSE)),
+    txt("An empty cell means: not reviewed."),
+    txt("The column comments is OPTIONAL and free text - fill it in only if you have something to add.", gap = TRUE),
+
+    list(kind = "heading", x = "Example (fictitious names)"),
+    list(kind = "table", x = data.frame(
+      Taxon_name = c("Genus exemplaris", "Genus alterus", "Genus dubius", "Genus novus"),
+      Found_in = c("POWO; GBIF; REFLORA", "POWO", "GBIF", "REFLORA"),
+      validation = c("correct", "incorrect", "uncertain", ""),
+      comments = c("", "Synonym of Genus primus, already in FFB",
+                   "Type not seen; possibly the same as Genus exemplaris", "(not reviewed yet)"),
+      stringsAsFactors = FALSE)),
+
+    list(kind = "heading", x = "Progress (updates by itself)"),
+    list(kind = "formulas", x = progress)
+  )
 }
